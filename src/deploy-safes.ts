@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { parse } from "csv";
 import { finished } from "stream/promises";
-import fs from "fs";
+import fsPromises from "fs/promises";
 
 import { ethers } from "ethers";
 import Safe, {
@@ -32,9 +32,9 @@ async function main() {
   process.env.SUPABASE_URL as string,
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
  );
- const providerUrl = `https://celo-alfajores.infura.io/v3/${process.env.INFURA_API_KEY as string
-  }`;
- const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+ const provider = new ethers.providers.JsonRpcProvider(
+  process.env.INFURA_RPC_URL as string,
+ );
  const safeOwner = new ethers.Wallet(
   process.env.SAFE_DEPLOYER_PRIVATE_KEY as string,
   provider,
@@ -81,7 +81,13 @@ const deploySafes = async (
  supabase: SupabaseClient,
 ) => {
  const threshold = 2;
+ let resultsData: any[] = [
+  "\ufeff", // BOM
+  "id,safe_deployed,safe_address,supabase_updated\n", // Header
+ ];
  for (const user of userList) {
+  let resultDataRow = `${user.id},`;
+  let newSafeAddress;
   console.info(`Deploying safe for ${user.id}...`);
   try {
    const safeAccountConfig: SafeAccountConfig = {
@@ -92,17 +98,31 @@ const deploySafes = async (
     threshold,
    };
    const sdk: Safe = await safeFactory.deploySafe({ safeAccountConfig });
-   const newSafeAddress = await sdk.getAddress();
-   console.info(`New safe deployed at ${newSafeAddress}`);
+   newSafeAddress = await sdk.getAddress();
+   resultDataRow += `true,${newSafeAddress},`;
+   console.info(`New safe deployed at ${newSafeAddress} `);
+  } catch (error) {
+   resultDataRow += `false,,`;
+   console.error(error);
+  }
+  try {
    const { error } = await supabase
     .from("users")
     .update({ safe_address: newSafeAddress })
     .eq("id", user.id);
    if (error) throw error;
+   resultDataRow += `true\n`;
    console.info(`User ${user.id} safe address added to supabase`);
   } catch (error) {
+   resultDataRow += `false\n`;
    console.error(error);
   }
+  resultsData.push(resultDataRow);
+ }
+ try {
+  await fsPromises.writeFile("results.csv", resultsData.join(""));
+ } catch (error) {
+  console.error(error);
  }
 };
 
