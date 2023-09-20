@@ -2,6 +2,7 @@ import * as dotenv from "dotenv";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { parse } from "csv";
 import { finished } from "stream/promises";
+import fs from "fs";
 import fsPromises from "fs/promises";
 
 import { ethers } from "ethers";
@@ -25,12 +26,16 @@ async function main() {
  }
  const filePath = process.argv[2];
  const userList = await processFile(filePath);
- console.log(userList);
 
  // Create a single supabase client with admin rights
  const supabaseAdmin = createClient(
   process.env.SUPABASE_URL as string,
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
+  {
+   auth: {
+    persistSession: false,
+   },
+  },
  );
  const provider = new ethers.providers.JsonRpcProvider(
   process.env.INFURA_RPC_URL as string,
@@ -88,6 +93,7 @@ const deploySafes = async (
  for (const user of userList) {
   let resultDataRow = `${user.id},`;
   let newSafeAddress;
+  console.log("=======================");
   console.info(`Deploying safe for ${user.id}...`);
   try {
    const safeAccountConfig: SafeAccountConfig = {
@@ -101,20 +107,22 @@ const deploySafes = async (
    newSafeAddress = await sdk.getAddress();
    resultDataRow += `true,${newSafeAddress},`;
    console.info(`New safe deployed at ${newSafeAddress} `);
+   try {
+    const { error } = await supabase
+     .from("users")
+     .update({ safe_address: newSafeAddress })
+     .eq("id", user.id);
+    if (error) throw error;
+    resultDataRow += `true\n`;
+    console.info(`User ${user.id} safe address added to supabase`);
+    console.log("=======================");
+   } catch (error) {
+    resultDataRow += `false\n`;
+    console.error(error);
+    console.log("=======================");
+   }
   } catch (error) {
-   resultDataRow += `false,,`;
-   console.error(error);
-  }
-  try {
-   const { error } = await supabase
-    .from("users")
-    .update({ safe_address: newSafeAddress })
-    .eq("id", user.id);
-   if (error) throw error;
-   resultDataRow += `true\n`;
-   console.info(`User ${user.id} safe address added to supabase`);
-  } catch (error) {
-   resultDataRow += `false\n`;
+   resultDataRow += `false,,false\n`;
    console.error(error);
   }
   resultsData.push(resultDataRow);
