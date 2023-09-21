@@ -49,6 +49,7 @@ async function main() {
   ethers,
   signerOrProvider: safeOwner,
  });
+
  const safeFactory = await SafeFactory.create({ ethAdapter });
  await deploySafes(userList, safeFactory, supabaseAdmin);
 }
@@ -90,11 +91,13 @@ const deploySafes = async (
   "\ufeff", // BOM
   "id,safe_deployed,safe_address,supabase_updated\n", // Header
  ];
+
  for (const user of userList) {
   let resultDataRow = `${user.id},`;
   let newSafeAddress;
   console.log("=======================");
   console.info(`Deploying safe for ${user.id}...`);
+
   try {
    const safeAccountConfig: SafeAccountConfig = {
     owners: [
@@ -125,8 +128,10 @@ const deploySafes = async (
    resultDataRow += `false,,false\n`;
    console.error(error);
   }
+
   resultsData.push(resultDataRow);
  }
+
  try {
   await fsPromises.writeFile("results.csv", resultsData.join(""));
  } catch (error) {
