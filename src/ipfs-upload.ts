@@ -7,7 +7,7 @@ async function main() {
 
  if (!token) {
   return console.error(
-   "A token is needed. You can create one on https://web3.storage"
+   "A token is needed. You can create one on https://web3.storage",
   );
  }
 

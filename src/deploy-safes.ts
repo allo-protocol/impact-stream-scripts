@@ -41,7 +41,7 @@ async function main() {
   process.env.INFURA_RPC_URL as string,
  );
  const safeOwner = new ethers.Wallet(
-  process.env.SAFE_DEPLOYER_PRIVATE_KEY as string,
+  process.env.DEPLOYER_PRIVATE_KEY as string,
   provider,
  );
 
@@ -55,7 +55,7 @@ async function main() {
 }
 
 const processFile = async (filePath: string): Promise<User[]> => {
- const records: string[][] = [];
+ let records: string[][] = [];
  const parser = fs.createReadStream(filePath).pipe(
   parse({
    delimiter: ",",
@@ -139,4 +139,7 @@ const deploySafes = async (
  }
 };
 
-main();
+main().catch((error) => {
+ console.error(error);
+ process.exitCode = 1;
+});
