@@ -133,13 +133,10 @@ const deploySafes = async (
  }
 
  try {
-  await fsPromises.writeFile("results.csv", resultsData.join(""));
+  await fsPromises.writeFile("safes.csv", resultsData.join(""));
  } catch (error) {
   console.error(error);
  }
 };
 
-main().catch((error) => {
- console.error(error);
- process.exitCode = 1;
-});
+main();
