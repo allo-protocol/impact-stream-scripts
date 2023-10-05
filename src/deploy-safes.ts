@@ -4,6 +4,7 @@ import { parse } from "csv";
 import { finished } from "stream/promises";
 import fs from "fs";
 import fsPromises from "fs/promises";
+import { User } from "../types";
 
 import { ethers } from "ethers";
 import Safe, {
@@ -11,11 +12,6 @@ import Safe, {
  SafeAccountConfig,
  SafeFactory,
 } from "@safe-global/protocol-kit";
-
-type User = {
- id: string;
- address: string;
-};
 
 dotenv.config();
 

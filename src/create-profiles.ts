@@ -8,29 +8,7 @@ import fsPromises from "fs/promises";
 import { ethers, Contract } from "ethers";
 
 import registry from "../abi/Registry.json";
-
-type Metadata = {
- protocol: number;
- pointer: string;
-};
-type Profile = {
- nonce: number;
- name: string;
- metadata: Metadata;
- owner: string;
- members: string[];
-};
-
-type RawSupabaseData = {
- proposal_id: string;
- author: {
-  id: string;
-  name: string;
-  family_name: string;
-  address: string;
- };
- collaborators: string[] | null;
-};
+import { Profile, RawSupabaseData, Metadata } from "../types";
 
 dotenv.config();
 
