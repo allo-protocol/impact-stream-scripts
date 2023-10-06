@@ -1,12 +1,12 @@
 import * as dotenv from "dotenv";
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { supabaseAdmin, SupabaseClient } from "../common/supabase";
 import { parse } from "csv";
 import { finished } from "stream/promises";
 import fs from "fs";
 import fsPromises from "fs/promises";
 import { User } from "../types";
 
-import { ethers } from "ethers";
+import { ethers, signer } from "../common/ethers";
 import Safe, {
  EthersAdapter,
  SafeAccountConfig,
@@ -23,27 +23,9 @@ async function main() {
  const filePath = process.argv[2];
  const userList = await processFile(filePath);
 
- // Create a single supabase client with admin rights
- const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL as string,
-  process.env.SUPABASE_SERVICE_ROLE_KEY as string,
-  {
-   auth: {
-    persistSession: false,
-   },
-  },
- );
- const provider = new ethers.providers.JsonRpcProvider(
-  process.env.INFURA_RPC_URL as string,
- );
- const safeOwner = new ethers.Wallet(
-  process.env.DEPLOYER_PRIVATE_KEY as string,
-  provider,
- );
-
  const ethAdapter = new EthersAdapter({
   ethers,
-  signerOrProvider: safeOwner,
+  signerOrProvider: signer,
  });
 
  const safeFactory = await SafeFactory.create({ ethAdapter });

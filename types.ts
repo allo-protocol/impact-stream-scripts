@@ -26,3 +26,8 @@ export type RawSupabaseData = {
  };
  collaborators: string[] | null;
 };
+
+export type PoolDistributionList = {
+ poolId: number;
+ recipientIds: string[];
+};

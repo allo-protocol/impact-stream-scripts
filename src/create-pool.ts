@@ -1,7 +1,10 @@
 import * as dotenv from "dotenv";
 
-import { ethers, Contract, ContractTransaction } from "ethers";
-import allo from "../abi/Allo.json";
+import {
+ alloContract,
+ abiEncoder,
+ ContractTransaction,
+} from "../common/ethers";
 
 dotenv.config();
 
@@ -11,19 +14,6 @@ async function main() {
   process.exit(1); // Exit the script with an error code
  }
 
- const provider = new ethers.providers.JsonRpcProvider(
-  process.env.INFURA_RPC_URL as string,
- );
- const poolOwner = new ethers.Wallet(
-  process.env.DEPLOYER_PRIVATE_KEY as string,
-  provider,
- );
- const alloContract: Contract = new ethers.Contract(
-  process.env.ALLO_ADDRESS as string,
-  allo.abi,
-  poolOwner,
- );
- const abiEncoder = ethers.utils.defaultAbiCoder;
  const profileId = process.argv[2];
  const strategyAddress = process.argv[3];
  const initData = abiEncoder.encode(

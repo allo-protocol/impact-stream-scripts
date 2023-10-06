@@ -1,21 +1,15 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { supabaseAdmin, SupabaseClient } from "../common/supabase";
 import * as dotenv from "dotenv";
 import { parse } from "csv";
 import { finished } from "stream/promises";
 import fs from "fs";
 import fsPromises from "fs/promises";
 
-import { ethers, Contract } from "ethers";
+import { provider, registryContract, Contract } from "../common/ethers";
 
-import registry from "../abi/Registry.json";
-import { Profile, RawSupabaseData, Metadata } from "../types";
+import { Profile, RawSupabaseData } from "../types";
 
 dotenv.config();
-
-// Ingest data from supabase
-// Create ethers contract instances for Registry
-// Loop through records and create profile for each one
-// Write outcome to file
 
 async function main() {
  if (process.argv.length < 3) {
@@ -25,19 +19,6 @@ async function main() {
  const filePath = process.argv[2];
  const supabaseData = await processFile(filePath);
 
- const provider = new ethers.providers.JsonRpcProvider(
-  process.env.INFURA_RPC_URL as string,
- );
- // Create a single supabase client with admin rights
- const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL as string,
-  process.env.SUPABASE_SERVICE_ROLE_KEY as string,
-  {
-   auth: {
-    persistSession: false,
-   },
-  },
- );
  let nonce: number;
  await provider.getBlockNumber().then(async (blockNumber: number) => {
   const block = await provider.getBlock(blockNumber);
@@ -59,15 +40,6 @@ async function main() {
   };
  });
 
- const profileDeployer = new ethers.Wallet(
-  process.env.DEPLOYER_PRIVATE_KEY as string,
-  provider,
- );
- const registryContract = new ethers.Contract(
-  process.env.REGISTRY_ADDRESS as string,
-  registry.abi,
-  profileDeployer,
- );
  await createProfiles(profiles, registryContract, supabaseAdmin);
 }
 
