@@ -6,6 +6,7 @@ import fs from "fs";
 import fsPromises from "fs/promises";
 
 import { provider, registryContract, Contract } from "../common/ethers";
+import { storage, createFileObject } from "../common/ipfs";
 
 import { Profile, RawSupabaseData } from "../types";
 
@@ -24,21 +25,36 @@ async function main() {
   const block = await provider.getBlock(blockNumber);
   nonce = block.number;
  });
- const profiles = supabaseData.map((profile: RawSupabaseData) => {
-  return {
-   nonce: nonce++,
-   name: `${profile.author.name} ${profile.author.family_name} - ${profile.author.id}`,
-   metadata: {
-    protocol: 1,
-    pointer: "Test Pointer",
-   },
-   owner: profile.author.address,
-   members:
+ const profiles = await Promise.all(
+  supabaseData.map(async (profile: RawSupabaseData) => {
+   let cid: string;
+   try {
+    const fileObject = createFileObject({
+     //TODO: Ask team what data to put in the file
+     name: "",
+     data: {},
+    });
+    cid = await storage.put([fileObject], { wrapWithDirectory: false });
+   } catch (error) {
+    cid = "";
+    console.error(error);
+   }
+   const collaborators =
     profile.collaborators !== null
-     ? [...profile.collaborators, profile.author.address]
-     : [profile.author.address],
-  };
- });
+     ? (profile.collaborators as string[])
+     : [];
+   return {
+    nonce: nonce++,
+    name: `${profile.author.name} ${profile.author.family_name} - ${profile.author.id}`,
+    metadata: {
+     protocol: 1,
+     pointer: cid ? `https://ipfs.w3s.link/${cid}` : "",
+    },
+    owner: profile.author.address as string,
+    members: [...collaborators, profile.author.address as string],
+   };
+  }),
+ );
 
  await createProfiles(profiles, registryContract, supabaseAdmin);
 }
