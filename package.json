@@ -4,7 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "create-pool": "node ./dist/src/create-pool.js",
+    "create-profiles": "node ./dist/src/create-profiles.js",
+    "deploy-safes": "node ./dist/src/deploy-safes.js",
+    "create-recipients": "node ./dist/src/create-recipients.js",
+    "set-payouts": "node ./dist/src/set-payouts.js",
+    "distribute-payouts": "node ./dist/src/distribute-payouts.js",
+    "ipfs-upload": "node ./dist/src/ipfs-upload.js"
   },
   "keywords": [],
   "author": "",

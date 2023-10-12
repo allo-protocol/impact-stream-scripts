@@ -6,7 +6,7 @@ export const provider = new ethers.providers.JsonRpcProvider(
  process.env.INFURA_RPC_URL as string,
 );
 export const signer = new ethers.Wallet(
- process.env.DEPLOYER_PRIVATE_KEY as string,
+ process.env.SIGNER_PRIVATE_KEY as string,
  provider,
 );
 

@@ -16,18 +16,36 @@ export type Profile = {
  members: string[];
 };
 
+export type Recipient = {
+ userId: string;
+ recipientId: string;
+ recipientAddress: string;
+ requestedAmount: number;
+ metadata: Metadata;
+};
+
 export type RawSupabaseData = {
  proposal_id: string;
  author: {
   id: string;
-  name: string;
-  family_name: string;
-  address: string;
+  name?: string;
+  family_name?: string;
+  address?: string;
  };
- collaborators: string[] | null;
+ collaborators?: string[];
+ minimum_budget?: number;
+ allo_recipient_id?: string;
+ safe_address?: string;
 };
 
 export type PoolDistributionList = {
  poolId: number;
  recipientIds: string[];
+};
+
+export type RawFileData = {
+ name: string;
+ data: {
+  [key: string]: string;
+ };
 };
