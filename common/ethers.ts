@@ -11,17 +11,17 @@ export const signer = new ethers.Wallet(
 );
 
 export const registryContract = new ethers.Contract(
- process.env.REGISTRY_ADDRESS as string,
+ process.env.ALLO_REGISTRY_ADDRESS as string,
  registry.abi,
  signer,
 );
 export const alloContract: Contract = new ethers.Contract(
- process.env.ALLO_ADDRESS as string,
+ process.env.ALLO_MAIN_ADDRESS as string,
  allo.abi,
  signer,
 );
 export const strategyContract = new ethers.Contract(
- process.env.STRATEGY_ADDRESS as string,
+ process.env.ALLO_STRATEGY_ADDRESS as string,
  allo.abi,
  signer,
 );

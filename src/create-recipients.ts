@@ -106,7 +106,7 @@ const createRecipients = async (
     [recipientId, recipientAddress, requestedAmount, metadata],
    );
    const createTx = await alloContract.createRecipient(
-    process.env.POOL_ID,
+    process.env.ALLO_POOL_ID,
     strategyInitData,
    );
    const txReceipt = await createTx.wait();

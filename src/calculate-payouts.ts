@@ -6,7 +6,7 @@ import fsPromises from "fs/promises";
 
 import { alloContract, Contract } from "../common/ethers";
 
-import { PayoutList, Payout, AllocationEvent } from "../types";
+import { AllocationEvent } from "../types";
 
 dotenv.config();
 
