@@ -1,4 +1,3 @@
-import { supabaseAdmin, SupabaseClient } from "../common/supabase";
 import * as dotenv from "dotenv";
 import { parse } from "csv";
 import { finished } from "stream/promises";
@@ -7,7 +6,7 @@ import fsPromises from "fs/promises";
 
 import { alloContract, Contract } from "../common/ethers";
 
-import { PoolDistributionList, RawSupabaseData } from "../types";
+import { PoolDistributionList } from "../types";
 
 dotenv.config();
 

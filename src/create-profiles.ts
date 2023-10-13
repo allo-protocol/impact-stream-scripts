@@ -30,7 +30,7 @@ async function main() {
    let cid: string;
    try {
     const fileObject = createFileObject({
-     //TODO: Ask team what data to put in the file
+     // TODO: Ask team what data to put in the file
      name: "",
      data: {},
     });

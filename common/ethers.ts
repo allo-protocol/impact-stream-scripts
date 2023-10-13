@@ -20,5 +20,10 @@ export const alloContract: Contract = new ethers.Contract(
  allo.abi,
  signer,
 );
+export const strategyContract = new ethers.Contract(
+ process.env.STRATEGY_ADDRESS as string,
+ allo.abi,
+ signer,
+);
 export const abiEncoder = ethers.utils.defaultAbiCoder;
 export { ethers, Contract, ContractTransaction } from "ethers";

@@ -43,6 +43,15 @@ export type PoolDistributionList = {
  recipientIds: string[];
 };
 
+export type Payout = {
+ recipientId: string;
+ amount: number;
+};
+
+export type AllocationEvent = {
+ recipientId: string;
+ voteResult: number;
+};
 export type RawFileData = {
  name: string;
  data: {
