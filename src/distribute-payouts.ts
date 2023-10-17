@@ -6,7 +6,7 @@ import fsPromises from "fs/promises";
 
 import { alloContract, Contract } from "../common/ethers";
 
-import { PoolDistributionList } from "../types";
+import { DistributionList } from "../types";
 
 dotenv.config();
 
@@ -21,10 +21,8 @@ async function main() {
  await distributeFunds(distributionData, alloContract);
 }
 
-const processFile = async (
- filePath: string,
-): Promise<PoolDistributionList[]> => {
- let records: string[][] = [];
+const processFile = async (filePath: string): Promise<DistributionList> => {
+ let records: string[] = [];
  const parser = fs.createReadStream(filePath).pipe(
   parse({
    delimiter: ",",
@@ -43,54 +41,51 @@ const processFile = async (
   .slice(1) // Remove the header
   .map((record) => {
    return {
-    poolId: record[0],
-    recipientIds: record[1].split(","),
+    recipientIds: record[0].split(","),
    };
   });
  return distributionList;
 };
 
 const distributeFunds = async (
- poolDistributionLists: PoolDistributionList[],
+ distributionList: DistributionList,
  alloContract: Contract,
 ) => {
+ const poolId = process.env.ALLO_POOL_ID as string;
  let resultsData: any[] = [
   "\ufeff", // BOM
-  "pool_id,recipient_id,distribution_executed,recipient_address,amount\n", // Header
+  "recipient_id,distribution_executed,recipient_address,amount\n", // Header
  ];
- for (const poolDistributionList of poolDistributionLists) {
-  for (const recipientId of poolDistributionList.recipientIds) {
-   console.log("=======================");
-   console.info(
-    `Running distribution for pool ${poolDistributionList.poolId} and recipient ${recipientId}...`,
+ for (const recipientId of distributionList) {
+  console.log("=======================");
+  console.info(
+   `Running distribution for pool ${poolId} and recipient ${recipientId}...`,
+  );
+  let resultDataRow = `${poolId},`;
+  resultDataRow += `${recipientId},`;
+  try {
+   const createTx = await alloContract.distribute(
+    poolId,
+    distributionList,
+    "",
    );
-   let resultDataRow = `${poolDistributionList.poolId},`;
-   resultDataRow += `${recipientId},`;
-   try {
-    const { poolId, recipientIds } = poolDistributionList;
-    const createTx = await alloContract.distribute(
-     poolId,
-     recipientIds,
-     "",
-    );
-    const txReceipt = await createTx.wait();
-    let logs = txReceipt?.logs.map((log: any) => {
-     return alloContract.interface.parseLog(log);
-    });
-    const distributionLog = logs.find((log: any) => {
-     return log.name === "Distributed";
-    });
-    const { recipientAddress, amount } = distributionLog;
-    resultDataRow += `true,${recipientAddress},${amount}\n`;
-    console.info(
-     `Distribution completed for pool ${poolId} to ${recipientId}`,
-    );
-   } catch (error) {
-    resultDataRow += `false,,\n`;
-    console.error(error);
-   }
-   resultsData.push(resultDataRow);
+   const txReceipt = await createTx.wait();
+   let logs = txReceipt?.logs.map((log: any) => {
+    return alloContract.interface.parseLog(log);
+   });
+   const distributionLog = logs.find((log: any) => {
+    return log.name === "Distributed";
+   });
+   const { recipientAddress, amount } = distributionLog;
+   resultDataRow += `true,${recipientAddress},${amount}\n`;
+   console.info(
+    `Distribution completed for pool ${poolId} to ${recipientId}`,
+   );
+  } catch (error) {
+   resultDataRow += `false,,\n`;
+   console.error(error);
   }
+  resultsData.push(resultDataRow);
  }
  try {
   await fsPromises.writeFile("distributions.csv", resultsData.join(""));

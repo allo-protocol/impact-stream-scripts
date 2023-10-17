@@ -38,11 +38,7 @@ export type RawSupabaseData = {
  safe_address?: string;
 };
 
-export type PoolDistributionList = {
- poolId: number;
- recipientIds: string[];
-};
-
+export type DistributionList = string[];
 export type Payout = {
  recipientId: string;
  amount: number;
