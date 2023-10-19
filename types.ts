@@ -39,6 +39,7 @@ export type RawSupabaseData = {
 };
 
 export type DistributionList = string[];
+export type AddressList = string[];
 export type Payout = {
  recipientId: string;
  amount: number;
