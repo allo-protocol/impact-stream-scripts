@@ -75,7 +75,7 @@ const processFile = async (filePath: string): Promise<RawSupabaseData[]> => {
     proposal_id: record[0],
     author: JSON.parse(record[1]),
     collaborators: record[2].length === 0 ? null : JSON.parse(record[2]),
-    udget: parseInt(record[3]),
+    mimimum_budget: parseInt(record[3]),
     recipient_id: record[4],
     safe_address: record[5],
    };

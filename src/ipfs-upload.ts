@@ -1,24 +1,16 @@
-import minimist from "minimist";
 import { Web3Storage, getFilesFromPath } from "web3.storage";
 
 async function main() {
- const args: minimist.ParsedArgs = minimist(process.argv.slice(2));
- const token: string | undefined = args.token;
-
- if (!token) {
-  return console.error(
-   "A token is needed. You can create one on https://web3.storage",
-  );
+ if (process.argv.length < 3) {
+  console.error("Please supply the path to a file or directory");
+  process.exit(1);
  }
-
- if (args._.length < 1) {
-  return console.error("Please supply the path to a file or directory");
- }
+ const token = process.env.WEB3STORAGE_TOKEN as string;
 
  const storage = new Web3Storage({ token });
  const files = [];
 
- for (const path of args._) {
+ for (const path of process.argv.slice(2)) {
   const pathFiles = await getFilesFromPath(path);
   files.push(...pathFiles);
  }
