@@ -8,6 +8,7 @@
     "create-pool": "node ./dist/src/create-pool.js",
     "create-profiles": "node ./dist/src/create-profiles.js",
     "deploy-safes": "node ./dist/src/deploy-safes.js",
+    "deploy-strategy": "node ./dist/src/deploy-strategy.js",
     "register-allocators": "node ./dist/src/register-allocators.js",
     "create-recipients": "node ./dist/src/create-recipients.js",
     "calculate-payouts": "node ./dist/src/calculate-payouts.js",
