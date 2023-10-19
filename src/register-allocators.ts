@@ -17,7 +17,7 @@ async function main() {
  const filePath = process.argv[2];
  const supabaseData = await processFile(filePath);
 
- await registerAllocators(supabaseData);
+ await registerAllocators(supabaseData, alloContract);
 }
 
 const processFile = async (filePath: string): Promise<AddressList> => {
