@@ -1,9 +1,10 @@
-import { supabaseAdmin, SupabaseClient } from "../common/supabase";
 import * as dotenv from "dotenv";
 import { parse } from "csv";
 import { finished } from "stream/promises";
 import fs from "fs";
 import fsPromises from "fs/promises";
+
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 import { abiEncoder, alloContract, Contract } from "../common/ethers";
 import { storage, createFileObject } from "../common/ipfs";
@@ -18,6 +19,16 @@ async function main() {
  }
  const filePath = process.argv[2];
  const supabaseData = await processFile(filePath);
+
+ const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL as string,
+  process.env.SUPABASE_SERVICE_ROLE_KEY as string,
+  {
+   auth: {
+    persistSession: false,
+   },
+  },
+ );
 
  const recipients = await Promise.all(
   supabaseData.map(async (recipient: RawSupabaseData) => {

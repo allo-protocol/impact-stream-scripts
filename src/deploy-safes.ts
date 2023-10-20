@@ -1,10 +1,10 @@
 import * as dotenv from "dotenv";
-import { supabaseAdmin, SupabaseClient } from "../common/supabase";
 import { parse } from "csv";
 import { finished } from "stream/promises";
 import fs from "fs";
 import fsPromises from "fs/promises";
 import { User } from "../types";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 import { ethers, signer } from "../common/ethers";
 import Safe, {
@@ -23,6 +23,16 @@ async function main() {
  const filePath = process.argv[2];
  const userList = await processFile(filePath);
 
+ // Create a single supabase client with admin rights
+ const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL as string,
+  process.env.SUPABASE_SERVICE_ROLE_KEY as string,
+  {
+   auth: {
+    persistSession: false,
+   },
+  },
+ );
  const ethAdapter = new EthersAdapter({
   ethers,
   signerOrProvider: signer,

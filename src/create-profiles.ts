@@ -1,7 +1,8 @@
-import { supabaseAdmin, SupabaseClient } from "../common/supabase";
 import * as dotenv from "dotenv";
 import { parse } from "csv";
 import { finished } from "stream/promises";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+
 import fs from "fs";
 import fsPromises from "fs/promises";
 
@@ -13,7 +14,16 @@ import { Profile, RawSupabaseData } from "../types";
 dotenv.config();
 
 async function main() {
- if (process.argv.length < 3) {
+ const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL as string,
+  process.env.SUPABASE_SERVICE_ROLE_KEY as string,
+  {
+   auth: {
+    persistSession: false,
+   },
+  },
+ );
+ if (process.argv.length < 2) {
   console.error("Please provide the CSV file path as an argument");
   process.exit(1); // Exit the script with an error code
  }
@@ -27,23 +37,31 @@ async function main() {
  });
  const profiles = await Promise.all(
   supabaseData.map(async (profile: RawSupabaseData) => {
-   let cid: string;
-   try {
-    const fileObject = createFileObject({
-     // TODO: Ask team what data to put in the file
-     name: "",
-     data: {},
-    });
-    cid = await storage.put([fileObject], { wrapWithDirectory: false });
-   } catch (error) {
-    cid = "";
-    console.error(error);
-   }
+   let cid: string =
+    "bafybeiepdjmu7bkau2sv5hag4m76jyt747d4do6kenhedpvd24kcc2zq7u"; // hardcoded for now
+
+   // TODO: figure out efficient IPFS upload withot File System api
+
+   // let cid: string;
+   // const name = `${profile.author.name} ${profile.author.family_name} - ${profile.author.id}`;
+   // try {
+   //  const fileObject = createFileObject({
+   //   name: `${name}.json`,
+   //   data: {
+   //    user_id: profile.author.id,
+   //   },
+   //  });
+   //  cid = await storage.put([fileObject], { wrapWithDirectory: false });
+   // } catch (error) {
+   //  cid = "";
+   //  console.error(error);
+   // }
    const collaborators =
     profile.collaborators !== null
      ? (profile.collaborators as string[])
      : [];
    return {
+    userId: profile.author.id,
     nonce: nonce++,
     name: `${profile.author.name} ${profile.author.family_name} - ${profile.author.id}`,
     metadata: {
@@ -97,10 +115,9 @@ const createProfiles = async (
   "id,profile_created,profile_id,supabase_updated\n", // Header
  ];
  for (const profile of profileList) {
-  const userId = profile.name.substring(profile.name.indexOf("- ") + 2);
-  let resultDataRow = `${userId},`;
+  let resultDataRow = `${profile.userId},`;
   console.log("=======================");
-  console.info(`Creating profile for ${userId}...`);
+  console.info(`Creating profile for ${profile.userId}...`);
 
   try {
    const { nonce, name, metadata, owner, members } = profile;
@@ -125,17 +142,15 @@ const createProfiles = async (
     const { error } = await supabaseClient
      .from("users")
      .update({ allo_profile_id: profileId, allo_anchor_address: anchor })
-     .eq("id", userId);
+     .eq("id", profile.userId);
     if (error) throw error;
     resultDataRow += `true\n`;
     console.info(
      `Allo profile id ${profileId} and anchor address ${anchor} added to supabase`,
     );
-    console.log("=======================");
    } catch (error) {
     resultDataRow += `false\n`;
     console.error(error);
-    console.log("=======================");
    }
   } catch (error) {
    resultDataRow += `false,,false\n`;
