@@ -9,6 +9,7 @@ export type Metadata = {
 };
 
 export type Profile = {
+ userId: string;
  nonce: number;
  name: string;
  metadata: Metadata;
@@ -38,6 +39,15 @@ export type RawSupabaseData = {
  safe_address?: string;
 };
 
+export type PoolDeployment = {
+ profileId: string;
+ strategyAddress: string;
+ initData: string;
+ tokenAddress: string;
+ amount: string;
+ metadata: Metadata;
+ managers: string[];
+};
 export type DistributionList = string[];
 export type AddressList = string[];
 export type Payout = {
