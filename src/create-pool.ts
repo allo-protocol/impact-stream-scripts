@@ -33,19 +33,18 @@ async function main() {
 
  try {
   console.info("Creating pool...");
-  const createTx: ContractTransaction =
-   await alloContract.createPoolWithCustomStrategy(
-    profileId,
-    strategyAddress,
-    initData,
-    tokenAddress,
-    amount,
-    metadata,
-    managers,
-    {
-     gasLimit: 10000000,
-    },
-   );
+  const createTx: ContractTransaction = await alloContract.createPool(
+   profileId,
+   strategyAddress,
+   initData,
+   tokenAddress,
+   amount,
+   metadata,
+   managers,
+   {
+    gasLimit: 10000000,
+   },
+  );
   const txReceipt = await createTx.wait();
   let logs = txReceipt?.logs.map((log: any) => {
    return alloContract.interface.parseLog(log);
@@ -80,8 +79,8 @@ const processFile = async (filePath: string): Promise<PoolDeployment[]> => {
    profileId: record[0],
    strategyAddress: record[1],
    initData: abiEncoder.encode(
-    ["tuple(uint64, uint64, uint256)"],
-    [[record[2], record[3], record[4]]],
+    ["uint64", "uint64", "uint256"],
+    [record[2], record[3], record[4]],
    ),
    tokenAddress: record[5],
    amount: record[6],

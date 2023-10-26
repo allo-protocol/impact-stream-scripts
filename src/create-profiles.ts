@@ -38,7 +38,7 @@ async function main() {
  const profiles = await Promise.all(
   supabaseData.map(async (profile: RawSupabaseData) => {
    let cid: string =
-    "bafybeiepdjmu7bkau2sv5hag4m76jyt747d4do6kenhedpvd24kcc2zq7u"; // hardcoded for now
+    "bafybeif43xtcb7zfd6lx7rfq42wjvpkbqgoo7qxrczbj4j4iwfl5aaqv2q"; // hardcoded for now
 
    // TODO: figure out efficient IPFS upload withot File System api
 
@@ -127,6 +127,9 @@ const createProfiles = async (
     metadata,
     owner,
     members,
+    {
+     gasLimit: 10000000,
+    },
    );
    const txReceipt = await createTx.wait();
    let logs = txReceipt?.logs.map((log: any) => {
