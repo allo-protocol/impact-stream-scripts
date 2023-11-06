@@ -16,6 +16,12 @@ async function main() {
 }
 
 const calculatePayouts = async (alloContract: Contract) => {
+
+  // get total votes casted 
+  // get count the votes for each proposal
+  // X = find out % of the votes for each proposal from total votes
+  // X% of total pot
+
   // const allocationEventSignature = "Allocated(address,uint256,address)";
   // const allocationStartTime = await alloContract.allocationStartTime();
   // let allocationLogFilter = alloContract.filters.Allocated(null, null, null);

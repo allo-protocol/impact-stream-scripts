@@ -103,8 +103,6 @@ const createRecipients = async (
   for (const recipient of recipients) {
     const userId = recipient.userId;
 
-    let resultDataRow = `${recipient.proposalId},`;
-
     console.info(`Creating Allo recipient for ${recipient.proposalId}...`);
 
     try {
@@ -131,7 +129,6 @@ const createRecipients = async (
       // get recipientId after registering
       const recipientId = staticCallResult.toString();
 
-      resultDataRow += `${userId},${recipientId},`;
       console.info(`Allo recipient created with id ${recipientId}`);
 
       try {
