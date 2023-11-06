@@ -1,4 +1,5 @@
 import * as dotenv from "dotenv";
+import { ContractTransaction } from "ethers";
 import { strategyContract } from "../common/ethers";
 import data from "../data/allocators.data.json";
 import { AddressList } from "../types";
@@ -11,7 +12,9 @@ async function registerAllocators() {
   console.info(`Registering ${addresses} as allocators...`);
 
   try {
-    const addTx = await strategyContract.batchAddAllocator(addresses);
+    const addTx: ContractTransaction = await strategyContract.batchAddAllocator(
+      addresses
+    );
     const txReceipt = await addTx.wait();
 
     console.info(

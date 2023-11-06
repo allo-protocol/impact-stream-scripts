@@ -1,23 +1,14 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { SupabaseClient } from "@supabase/supabase-js";
 import * as dotenv from "dotenv";
-import { Contract, ethers } from "ethers";
-import registry from "../abi/Registry.json";
+import { ethers } from "ethers";
+import { registryContract } from "../common/ethers";
+import { supabaseAdmin } from "../common/supabase";
 
 dotenv.config();
 
 const EMPTY_METADATA = [0, ""];
 
-async function createProfile() {
-  const supabaseAdmin = createClient(
-    process.env.SUPABASE_URL as string,
-    process.env.SUPABASE_SERVICE_ROLE_KEY as string,
-    {
-      auth: {
-        persistSession: false,
-      },
-    }
-  );
-
+async function createProfiles() {
   const approvedProposalsWithoutRecipientId = await supabaseAdmin
     .from("proposals")
     .select("*")
@@ -48,25 +39,10 @@ async function createProfile() {
 
   console.log("Profiles to be created: ", users.length);
 
-  await createProfiles(users, supabaseAdmin);
+  await _createProfiles(users, supabaseAdmin);
 }
 
-const createProfiles = async (users: any[], supabaseClient: SupabaseClient) => {
-  const provider = new ethers.providers.JsonRpcProvider(
-    process.env.INFURA_RPC_URL as string
-  );
-
-  const signer = new ethers.Wallet(
-    process.env.SIGNER_PRIVATE_KEY as string,
-    provider
-  );
-
-  const registryContract: Contract = new ethers.Contract(
-    process.env.ALLO_REGISTRY_ADDRESS as string,
-    registry.abi,
-    signer
-  );
-
+const _createProfiles = async (users: any[], supabaseClient: SupabaseClient) => {
   console.log("Creating Profiles ...", users.length);
 
   for (const user of users) {
@@ -117,7 +93,7 @@ const createProfiles = async (users: any[], supabaseClient: SupabaseClient) => {
   }
 };
 
-createProfile().catch((error) => {
+createProfiles().catch((error) => {
   console.error(error);
   process.exit(1);
 });

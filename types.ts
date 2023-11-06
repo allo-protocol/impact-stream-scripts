@@ -48,14 +48,14 @@ export type PoolDeployment = {
   managers: string[];
 };
 
-export type DistributionList = string[];
-
-export type AddressList = string[];
-
 export type Payout = {
-  recipientId: string;
+  address: string;
   amount: number;
 };
+
+export type DistributionList = Payout[];
+
+export type AddressList = string[];
 
 export type AllocationEvent = {
   recipientId: string;

@@ -1,26 +1,11 @@
 import * as dotenv from "dotenv";
-import { Contract, ContractTransaction, ethers } from "ethers";
-import allo from "../abi/Allo.json";
+import { ContractTransaction, ethers } from "ethers";
+import { alloContract } from "../common/ethers";
 import data from "../data/pool.data.json";
 
 dotenv.config();
 
 async function createPool() {
-  const provider = new ethers.providers.JsonRpcProvider(
-    process.env.INFURA_RPC_URL as string
-  );
-
-  const signer = new ethers.Wallet(
-    process.env.SIGNER_PRIVATE_KEY as string,
-    provider
-  );
-
-  const alloContract: Contract = new ethers.Contract(
-    process.env.ALLO_MAIN_ADDRESS as string,
-    allo.abi,
-    signer
-  );
-
   const startTime = data.allocationStartTime;
   const endTime = data.allocationEndTime;
 

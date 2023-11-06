@@ -1,8 +1,8 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { SupabaseClient } from "@supabase/supabase-js";
 import * as dotenv from "dotenv";
 import { Contract, ethers } from "ethers";
-import allo from "../abi/Allo.json";
-import strategy from "../abi/QVImpactStreamStrategy.json";
+import { alloContract, strategyContract } from "../common/ethers";
+import { supabaseAdmin } from "../common/supabase";
 import { Recipient } from "../types";
 
 dotenv.config();
@@ -11,37 +11,6 @@ const EMPTY_METADATA = [0, "0x000123456789"];
 const EMPTY_RECIPIENT_ID = "0x0000000000000000000000000000000000000000";
 
 async function registerRecipient() {
-  const provider = new ethers.providers.JsonRpcProvider(
-    process.env.INFURA_RPC_URL as string
-  );
-
-  const signer = new ethers.Wallet(
-    process.env.SIGNER_PRIVATE_KEY as string,
-    provider
-  );
-
-  const alloContract: Contract = new ethers.Contract(
-    process.env.ALLO_MAIN_ADDRESS as string,
-    allo.abi,
-    signer
-  );
-
-  const strategyContract: Contract = new ethers.Contract(
-    process.env.ALLO_STRATEGY_ADDRESS as string,
-    strategy.abi,
-    signer
-  );
-
-  const supabaseAdmin = createClient(
-    process.env.SUPABASE_URL as string,
-    process.env.SUPABASE_SERVICE_ROLE_KEY as string,
-    {
-      auth: {
-        persistSession: false,
-      },
-    }
-  );
-
   const approvedProposals = await supabaseAdmin
     .from("proposals")
     .select("*")
