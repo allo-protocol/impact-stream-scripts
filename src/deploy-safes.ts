@@ -34,9 +34,9 @@ async function main() {
 
   let safelessUsers:User[] = [];
   
-  for (const user of usersWithoutSafe.data) {
+  for (const user of usersWithoutSafe.data!) {
     // filter approvedProposals where user is the author
-    const proposalsByUser = approvedProposals.data.filter(
+    const proposalsByUser = approvedProposals.data!.filter(
       (proposal: any) => proposal.author_id === user.id
     );
 
