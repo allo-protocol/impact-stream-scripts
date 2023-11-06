@@ -9,60 +9,60 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { abiEncoder, alloContract } from "../common/ethers";
 import { storage, createFileObject } from "../common/ipfs";
 import { RawSupabaseData, Recipient } from "../types";
-import { Contract } from "ethers";
-
+import { Contract, ethers } from "ethers";
 
 dotenv.config();
 
 async function main() {
- if (process.argv.length < 3) {
-  console.error("Please provide the CSV file path as an argument");
-  process.exit(1); // Exit the script with an error code
- }
- const filePath = process.argv[2];
- const supabaseData = await processFile(filePath);
+  if (process.argv.length < 3) {
+    console.error("Please provide the CSV file path as an argument");
+    process.exit(1); // Exit the script with an error code
+  }
+  const filePath = process.argv[2];
+  const supabaseData = await processFile(filePath);
 
- const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL as string,
-  process.env.SUPABASE_SERVICE_ROLE_KEY as string,
-  {
-   auth: {
-    persistSession: false,
-   },
-  },
- );
-
- const recipients = await Promise.all(
-  supabaseData.map(async (recipient: RawSupabaseData) => {
-   let cid: string;
-   try {
-    const fileObject = createFileObject({
-     name: `${recipient.allo_recipient_id}`,
-     data: {
-      user_id: recipient.author.id,
-      supabase_proposal_id: recipient.proposal_id,
-     },
-    });
-
-    cid = await storage.put([fileObject], { wrapWithDirectory: false });
-   } catch (error) {
-    cid = "";
-    console.error(error);
-   }
-   return {
-    userId: recipient.author.id as string,
-    recipientId: recipient.allo_recipient_id as string,
-    recipientAddress: recipient.safe_address as string,
-    requestedAmount: recipient.minimum_budget as number,
-    metadata: {
-     protocol: 1,
-     pointer: cid ? `https://ipfs.w3s.link/${cid}` : "",
+  const supabaseAdmin = createClient(
+    process.env.SUPABASE_URL as string,
+    process.env.SUPABASE_SERVICE_ROLE_KEY as string,
+    {
+      auth: {
+        persistSession: false,
+      },
     },
-   };
-  }),
- );
+  );
 
- await createRecipients(recipients, alloContract, supabaseAdmin);
+  const recipients = await Promise.all(
+    supabaseData.map(async (recipient: RawSupabaseData) => {
+      let cid: string;
+      try {
+        const fileObject = createFileObject({
+          name: `${recipient.allo_recipient_id}`,
+          data: {
+            user_id: recipient.author.id,
+            supabase_proposal_id: recipient.proposal_id,
+          },
+        });
+
+        cid = await storage.put([fileObject], { wrapWithDirectory: false });
+      } catch (error) {
+        cid = "";
+        console.error(error);
+      }
+      return {
+        userId: recipient.author.id as string,
+        recipientId: recipient.allo_recipient_id as string,
+        recipientAddress: recipient.safe_address as string,
+        requestedAmount: recipient.minimum_budget as number,
+        metadata: {
+          protocol: 1,
+          pointer: cid ? `https://ipfs.w3s.link/${cid}` : "",
+        },
+      };
+    }),
+  );
+
+  // todo alloContract
+  await createRecipients(recipients, alloContract, supabaseAdmin);
 }
 
 const processFile = async (filePath: string): Promise<RawSupabaseData[]> => {
@@ -85,70 +85,71 @@ const processFile = async (filePath: string): Promise<RawSupabaseData[]> => {
   .slice(1) // Remove the header
   .map((record) => {
    return {
-    proposal_id: record[0],
-    author: JSON.parse(record[1]),
-    collaborators: record[2].length === 0 ? null : JSON.parse(record[2]),
-    mimimum_budget: parseInt(record[3]),
-    recipient_id: record[4],
-    safe_address: record[5],
+     proposal_id: record[0],
+     author: JSON.parse(record[1]),
+     collaborators: record[2].length === 0 ? null : JSON.parse(record[2]),
+     mimimum_budget: parseInt(record[3]),
+     // recipient_id: record[4],
+     recipient_id: "0x0000000000000000000000000000000000000000",
+     safe_address: record[5],
    };
   });
  return recipients;
 };
 
 const createRecipients = async (
- recipientList: Recipient[],
- alloContract: Contract,
- supabaseClient: SupabaseClient,
+  recipientList: Recipient[],
+  alloContract: Contract, // todo Contract
+  supabaseClient: SupabaseClient,
 ) => {
- let resultsData: any[] = [
-  "\ufeff", // BOM
-  "id,recipient_created,recipient_id,supabase_updated\n", // Header
- ];
- for (const recipient of recipientList) {
-  const userId = recipient.userId;
-  let resultDataRow = `${userId},`;
-  console.log("=======================");
-  console.info(`Creating Allo recipient for ${userId}...`);
+  let resultsData: any[] = [
+    "\ufeff", // BOM
+    "id,recipient_created,recipient_id,supabase_updated\n", // Header
+  ];
+  for (const recipient of recipientList) {
+    const userId = recipient.userId;
+    let resultDataRow = `${userId},`;
+    console.log("=======================");
+    console.info(`Creating Allo recipient for ${userId}...`);
 
-  try {
-   const { recipientId, recipientAddress, requestedAmount, metadata } =
-    recipient;
-   const strategyInitData = abiEncoder.encode(
-    ["address", "address", "uint256", "Metadata"],
-    [recipientId, recipientAddress, requestedAmount, metadata],
-   );
-   const createTx = await alloContract.createRecipient(
-    process.env.ALLO_POOL_ID,
-    strategyInitData,
-   );
-   const txReceipt = await createTx.wait();
-   resultDataRow += `true,${recipientId},`;
-   console.info(`Allo recipient created with id ${recipientId}`);
-   try {
-    const { error } = await supabaseClient
-     .from("users")
-     .update({ allo_recipient_id: recipientId })
-     .eq("author_id", userId);
-    if (error) throw error;
-    resultDataRow += `true\n`;
-    console.info(`Allo recipient id ${recipientId} added to supabase`);
-    console.log("=======================");
-   } catch (error) {
-    resultDataRow += `false\n`;
-    console.error(error);
-    console.log("=======================");
-   }
-  } catch (error) {
-   resultDataRow += `false,,false\n`;
-   console.error(error);
+    try {
+      const { recipientId, recipientAddress, requestedAmount, metadata } =
+        recipient;
+      const recipientRegisterData = ethers.utils.defaultAbiCoder.encode(
+        ["address", "address", "uint256", "Metadata"],
+        [recipientId, recipientAddress, requestedAmount, metadata],
+      );
+      const createTx = await alloContract.registerRecipient(
+        process.env.ALLO_POOL_ID,
+        recipientRegisterData,
+      );
+      const txReceipt = await createTx.wait();
+      resultDataRow += `true,${recipientId},`;
+      console.info(`Allo recipient created with id ${recipientId}`);
+      try {
+        const { error } = await supabaseClient
+          .from("users")
+          .update({ allo_recipient_id: recipientId })
+          .eq("author_id", userId);
+        if (error) throw error;
+        resultDataRow += `true\n`;
+        console.info(`Allo recipient id ${recipientId} added to supabase`);
+        console.log("=======================");
+      } catch (error) {
+        resultDataRow += `false\n`;
+        console.error(error);
+        console.log("=======================");
+      }
+    } catch (error) {
+      resultDataRow += `false,,false\n`;
+      console.error(error);
+    }
+    resultsData.push(resultDataRow);
   }
-  resultsData.push(resultDataRow);
- }
- try {
-  await fsPromises.writeFile("recipients.csv", resultsData.join(""));
- } catch (error) {
-  console.error(error);
- }
+  try {
+    await fsPromises.writeFile("recipients.csv", resultsData.join(""));
+  } catch (error) {
+    console.error(error);
+  }
 };
 main();
