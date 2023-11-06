@@ -20,8 +20,6 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@ethersproject/abi": "^5.7.0",
-    "@ethersproject/providers": "^5.7.2",
     "@types/minimist": "^1.2.4",
     "@types/node": "^20.8.7",
     "dotenv": "^16.3.1",
@@ -33,7 +31,7 @@
     "@safe-global/safe-core-sdk-types": "^2.3.0",
     "@supabase/supabase-js": "^2.38.2",
     "csv": "^6.3.5",
-    "ethers": "^5.7.2",
+    "ethers": "5.7.2",
     "minimalist": "^1.0.0",
     "web3-core": "^4.3.1",
     "web3.storage": "^4.5.5"

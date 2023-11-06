@@ -48,8 +48,6 @@ async function main() {
     }
   }
   
-  console.log(safelessUsers);
-
   await deploySafes(safelessUsers, supabaseAdmin);
 }
 
@@ -73,6 +71,8 @@ const deploySafes = async (
   })
 
   const safeFactory: SafeFactory = await SafeFactory.create({ ethAdapter });
+
+  console.log("Creating Safe Accounts...");
 
   for (const user of users) {
     let newSafeAddress;
