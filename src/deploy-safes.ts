@@ -1,37 +1,15 @@
 import * as dotenv from "dotenv";
-import { parse } from "csv";
-import { finished } from "stream/promises";
-import fs from "fs";
-import fsPromises from "fs/promises";
 import { User } from "../types";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { ethers } from "ethers";
 
-import Safe, {
-  EthersAdapter,
-  SafeAccountConfig,
-  SafeFactory,
-} from "@safe-global/protocol-kit";
+import { SafeAccountConfig, EthersAdapter, SafeFactory } from '@safe-global/protocol-kit'
+
+const THRESHOLD = 2;
 
 dotenv.config();
 
 async function main() {
-  const provider = new ethers.providers.JsonRpcProvider(
-    process.env.INFURA_RPC_URL as string
-  );
-
-  const signer = new ethers.Wallet(
-    process.env.SIGNER_PRIVATE_KEY as string,
-    provider
-  );
-
-  if (process.argv.length < 3) {
-    console.error("Please provide the CSV file path as an argument");
-    process.exit(1); // Exit the script with an error code
-  }
-
-  const filePath = process.argv[2];
-  const userList = await processFile(filePath);
 
   // Create a single supabase client with admin rights
   const supabaseAdmin = createClient(
@@ -44,98 +22,94 @@ async function main() {
     }
   );
 
-  const ethAdapter = new EthersAdapter({
-    ethers,
-    signerOrProvider: signer,
-  });
+  const approvedProposals = await supabaseAdmin
+    .from("proposals")
+    .select("*")
+    .eq("approved", true); // Filter for approved = true;
 
-  const safeFactory = await SafeFactory.create({ ethAdapter });
-  await deploySafes(userList, safeFactory, supabaseAdmin);
+  const usersWithoutSafe = await supabaseAdmin
+    .from("users")
+    .select("*")
+    .is("safe_address", null);
+
+  let safelessUsers:User[] = [];
+  
+  for (const user of usersWithoutSafe.data) {
+    // filter approvedProposals where user is the author
+    const proposalsByUser = approvedProposals.data.filter(
+      (proposal: any) => proposal.author_id === user.id
+    );
+
+    if (proposalsByUser.length > 0) {
+      safelessUsers.push({
+        id: user.id,
+        address: user.address,
+      });
+    }
+  }
+  
+  console.log(safelessUsers);
+
+  await deploySafes(safelessUsers, supabaseAdmin);
 }
 
-const processFile = async (filePath: string): Promise<User[]> => {
-  let records: string[][] = [];
-  const parser = fs.createReadStream(filePath).pipe(
-    parse({
-      delimiter: ",",
-      bom: true,
-    })
-  );
-  parser.on("readable", function () {
-    let record;
-    while ((record = parser.read()) !== null) {
-      // Work with each record
-      records.push(record);
-    }
-  });
-  await finished(parser);
-  const userObjects: User[] = records
-    .map((record) => {
-      return {
-        id: record[0],
-        address: record[1],
-      };
-    })
-    .slice(1); // Remove the header
-  return userObjects;
-};
-
 const deploySafes = async (
-  userList: User[],
-  safeFactory: SafeFactory,
+  users: User[],
   supabase: SupabaseClient
 ) => {
-  const threshold = 2;
-  let resultsData: any[] = [
-    "\ufeff", // BOM
-    "id,safe_deployed,safe_address,supabase_updated\n", // Header
-  ];
 
-  for (const user of userList) {
-    let resultDataRow = `${user.id},`;
+  const provider = new ethers.providers.JsonRpcProvider(
+    process.env.INFURA_RPC_URL as string
+  );
+
+  const signer = new ethers.Wallet(
+    process.env.SIGNER_PRIVATE_KEY as string,
+    provider
+  );
+  
+  const ethAdapter = new EthersAdapter({
+    ethers,
+    signerOrProvider: signer
+  })
+
+  const safeFactory: SafeFactory = await SafeFactory.create({ ethAdapter });
+
+  for (const user of users) {
     let newSafeAddress;
-    console.log("=======================");
-    console.info(`Deploying safe for ${user.id}...`);
-
+    
     try {
       const safeAccountConfig: SafeAccountConfig = {
         owners: [
           user.address,
           process.env.IMPACT_STREAM_MULTISIG_ADDRESS as string,
         ],
-        threshold,
+        threshold: THRESHOLD,
       };
-      const sdk: Safe = await safeFactory.deploySafe({ safeAccountConfig });
+
+      const sdk = await safeFactory.deploySafe({ safeAccountConfig });
+
       newSafeAddress = await sdk.getAddress();
-      resultDataRow += `true,${newSafeAddress},`;
-      console.info(`New safe deployed at ${newSafeAddress} `);
+
       try {
+    
         const { error } = await supabase
           .from("users")
           .update({ safe_address: newSafeAddress })
           .eq("id", user.id);
+
         if (error) throw error;
-        resultDataRow += `true\n`;
-        console.info(`User ${user.id} safe address added to supabase`);
-        console.log("=======================");
+        console.info(`UserId: ${user.id}. SafeAddress: ${newSafeAddress}`);
       } catch (error) {
-        resultDataRow += `false\n`;
+        console.error(`DB Update Failure. UserId: ${user.id}`);
         console.error(error);
-        console.log("=======================");
       }
     } catch (error) {
-      resultDataRow += `false,,false\n`;
+      console.info(`Creation Failure: UserId: ${user.id}`);
       console.error(error);
     }
 
-    resultsData.push(resultDataRow);
   }
 
-  try {
-    await fsPromises.writeFile("safes.csv", resultsData.join(""));
-  } catch (error) {
-    console.error(error);
-  }
 };
 
 main();
