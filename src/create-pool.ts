@@ -3,15 +3,12 @@ import { parse } from "csv";
 import { finished } from "stream/promises";
 import fs from "fs";
 
-import { PoolDeployment } from "../types";
-
 import { ContractTransaction, ethers, Contract } from "ethers";
 import allo from "../abi/Allo.json";
 
 dotenv.config();
 
 import data from "../data/pool.data.json";
-import { start } from "repl";
 
 async function main() {
   const provider = new ethers.providers.JsonRpcProvider(
