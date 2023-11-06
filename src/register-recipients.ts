@@ -1,7 +1,5 @@
-import * as dotenv from "dotenv";
-
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-
+import * as dotenv from "dotenv";
 import { Contract, ethers } from "ethers";
 import allo from "../abi/Allo.json";
 import strategy from "../abi/QVImpactStreamStrategy.json";
@@ -12,7 +10,7 @@ dotenv.config();
 const EMPTY_METADATA = [0, "0x000123456789"];
 const EMPTY_RECIPIENT_ID = "0x0000000000000000000000000000000000000000";
 
-async function main() {
+async function registerRecipient() {
   const provider = new ethers.providers.JsonRpcProvider(
     process.env.INFURA_RPC_URL as string
   );
@@ -106,32 +104,8 @@ async function main() {
       console.log("Creating Recipients ...");
     }
   }
-  // const recipients = await Promise.all(
-  //   supabaseData.map(async (recipient: RawSupabaseData) => {
-  //     try {
-  //       const fileObject = createFileObject({
-  //         name: `${recipient.allo_recipient_id}`,
-  //         data: {
-  //           user_id: recipient.author.id,
-  //           supabase_proposal_id: recipient.proposal_id,
-  //         },
-  //       });
-
-  //       await storage.put([fileObject], { wrapWithDirectory: false });
-  //     } catch (error) {
-  //       console.error(error);
-  //     }
-  //     return {
-  //       proposalId: recipient.proposal_id as string,
-  //       userId: recipient.author.id as string,
-  //       recipientAddress: recipient.safe_address as string,
-  //       requestedAmount: recipient.minimum_budget as number
-  //     };
-  //   })
-  // );
 
   await createRecipients(recipients, alloContract, supabaseAdmin);
-
   await registerOnchain(poolIds, recipientRegisterData, alloContract);
 }
 
@@ -225,4 +199,8 @@ const createRecipients = async (
     }
   }
 };
-main();
+
+registerRecipient().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

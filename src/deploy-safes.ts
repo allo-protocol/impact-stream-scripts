@@ -1,19 +1,18 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import * as dotenv from "dotenv";
-import { ethers } from "ethers";
-import { User } from "../types";
-
 import {
   EthersAdapter,
   SafeAccountConfig,
   SafeFactory,
 } from "@safe-global/protocol-kit";
+import { SupabaseClient, createClient } from "@supabase/supabase-js";
+import * as dotenv from "dotenv";
+import { ethers } from "ethers";
+import { User } from "../types";
 
 const THRESHOLD = 2;
 
 dotenv.config();
 
-async function main() {
+async function deploySafes() {
   // Create a single supabase client with admin rights
   const supabaseAdmin = createClient(
     process.env.SUPABASE_URL as string,
@@ -53,10 +52,10 @@ async function main() {
 
   console.log("safelessUsers count: ", safelessUsers.length);
 
-  await deploySafes(safelessUsers, supabaseAdmin);
+  await _deploySafes(safelessUsers, supabaseAdmin);
 }
 
-const deploySafes = async (users: User[], supabase: SupabaseClient) => {
+const _deploySafes = async (users: User[], supabase: SupabaseClient) => {
   const provider = new ethers.providers.JsonRpcProvider(
     process.env.INFURA_RPC_URL as string
   );
@@ -113,4 +112,7 @@ const deploySafes = async (users: User[], supabase: SupabaseClient) => {
   }
 };
 
-main();
+deploySafes().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

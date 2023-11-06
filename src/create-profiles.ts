@@ -1,6 +1,5 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import * as dotenv from "dotenv";
-
 import { Contract, ethers } from "ethers";
 import registry from "../abi/Registry.json";
 
@@ -8,7 +7,7 @@ dotenv.config();
 
 const EMPTY_METADATA = [0, ""];
 
-async function main() {
+async function createProfile() {
   const supabaseAdmin = createClient(
     process.env.SUPABASE_URL as string,
     process.env.SUPABASE_SERVICE_ROLE_KEY as string,
@@ -117,4 +116,8 @@ const createProfiles = async (users: any[], supabaseClient: SupabaseClient) => {
     }
   }
 };
-main();
+
+createProfile().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

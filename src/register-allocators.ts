@@ -1,78 +1,28 @@
 import * as dotenv from "dotenv";
-import { parse } from "csv";
-import { finished } from "stream/promises";
-import fs from "fs";
-import fsPromises from "fs/promises";
-
-import { abiEncoder, alloContract } from "../common/ethers";
-import { AddressList, Recipient } from "../types";
-import { Contract } from "ethers";
+import { strategyContract } from "../common/ethers";
+import data from "../data/allocators.data.json";
+import { AddressList } from "../types";
 
 dotenv.config();
 
-async function main() {
- if (process.argv.length < 3) {
-  console.error("Please provide the CSV file path as an argument");
-  process.exit(1); // Exit the script with an error code
- }
- const filePath = process.argv[2];
- const supabaseData = await processFile(filePath);
+async function registerAllocators() {
+  const addresses: AddressList = data.addresses;
 
- await registerAllocators(supabaseData, alloContract);
-}
-
-const processFile = async (filePath: string): Promise<AddressList> => {
- let records: string[][] = [];
- const parser = fs.createReadStream(filePath).pipe(
-  parse({
-   delimiter: ",",
-   bom: true,
-  }),
- );
- parser.on("readable", function () {
-  let record;
-  while ((record = parser.read()) !== null) {
-   // Work with each record
-   records.push(record);
-  }
- });
- await finished(parser);
- const allocators: any[] = records
-  .slice(1) // Remove the header
-  .map((record) => {
-   return record[0];
-  });
- return allocators;
-};
-
-const registerAllocators = async (
- addresses: AddressList,
- alloContract: Contract,
-) => {
- let resultsData: any[] = [
-  "\ufeff", // BOM
-  "wallet_address,allocator_registered\n", // Header
- ];
- for (const address of addresses) {
-  let resultDataRow = `${address},`;
-  console.log("=======================");
-  console.info(`Registering ${address} as an allocator...`);
+  console.info(`Registering ${addresses} as allocators...`);
 
   try {
-   const addTx = await alloContract.addAllocator(address);
-   const txReceipt = await addTx.wait();
-   resultDataRow += `true\n`;
-   console.info(`${address} registered as an allocator`);
+    const addTx = await strategyContract.batchAddAllocator(addresses);
+    const txReceipt = await addTx.wait();
+
+    console.info(
+      `${addresses} registered as an allocators at transaction ${txReceipt.transactionHash}`
+    );
   } catch (error) {
-   resultDataRow += `false\n`;
-   console.error(error);
+    console.error(error);
   }
-  resultsData.push(resultDataRow);
- }
- try {
-  await fsPromises.writeFile("allocators.csv", resultsData.join(""));
- } catch (error) {
+}
+
+registerAllocators().catch((error) => {
   console.error(error);
- }
-};
-main();
+  process.exitCode = 1;
+});
