@@ -9,8 +9,6 @@ import fsPromises from "fs/promises";
 import { provider, registryContract } from "../common/ethers";
 import { Contract } from "ethers";
 
-import { storage, createFileObject } from "../common/ipfs";
-
 import { Profile, RawSupabaseData } from "../types";
 
 dotenv.config();
