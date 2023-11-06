@@ -6,9 +6,11 @@ import fsPromises from "fs/promises";
 
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-import { abiEncoder, alloContract, Contract } from "../common/ethers";
+import { abiEncoder, alloContract } from "../common/ethers";
 import { storage, createFileObject } from "../common/ipfs";
 import { RawSupabaseData, Recipient } from "../types";
+import { Contract } from "ethers";
+
 
 dotenv.config();
 

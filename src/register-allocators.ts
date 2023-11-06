@@ -4,8 +4,9 @@ import { finished } from "stream/promises";
 import fs from "fs";
 import fsPromises from "fs/promises";
 
-import { abiEncoder, alloContract, Contract } from "../common/ethers";
+import { abiEncoder, alloContract } from "../common/ethers";
 import { AddressList, Recipient } from "../types";
+import { Contract } from "ethers";
 
 dotenv.config();
 
