@@ -1,19 +1,15 @@
 import * as dotenv from "dotenv";
-import { parse } from "csv";
-import { finished } from "stream/promises";
-import fs from "fs";
-import fsPromises from "fs/promises";
 
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-import { storage, createFileObject } from "../common/ipfs";
-import { RawSupabaseData, Recipient } from "../types";
 import { Contract, ethers } from "ethers";
 import allo from "../abi/Allo.json";
+import strategy from "../abi/QVImpactStreamStrategy.json";
+import { Recipient } from "../types";
 
 dotenv.config();
 
-const EMPTY_METADATA = [0, ""];
+const EMPTY_METADATA = [0, "0x000123456789"];
 const EMPTY_RECIPIENT_ID = "0x0000000000000000000000000000000000000000";
 
 async function main() {
@@ -32,6 +28,12 @@ async function main() {
     signer
   );
 
+  const strategyContract: Contract = new ethers.Contract(
+    process.env.ALLO_STRATEGY_ADDRESS as string,
+    strategy.abi,
+    signer
+  );
+
   const supabaseAdmin = createClient(
     process.env.SUPABASE_URL as string,
     process.env.SUPABASE_SERVICE_ROLE_KEY as string,
@@ -45,29 +47,65 @@ async function main() {
   const approvedProposals = await supabaseAdmin
     .from("proposals")
     .select("*")
-    .eq("approved", true); // Filter for approved = true;
+    .eq("approved", true) // Filter for approved = true;
+    .neq("allo_recipient_id", null);
 
   const usersWithSafe = await supabaseAdmin
     .from("users")
     .select("*")
     .neq("safe_address", null);
 
-  // let recipients = [];
+  let recipients: any = [];
+  let recipientRegisterData: any = [];
+  let poolIds: any = [];
 
-  // for (const user of usersWithSafe.data!) {
-  //   // filter approvedProposals where user is the author
-  //   const proposalsByUser = approvedProposals.data!.filter(
-  //     (proposal: any) => proposal.author_id === user.id
-  //   );
+  for (const user of usersWithSafe.data!) {
+    // filter approvedProposals where user is the author
+    const proposalsByUser = approvedProposals.data!.filter(
+      (proposal: any) => proposal.author_id === user.id
+    );
 
-  //   if (proposalsByUser.length > 0) {
-  //     console.info(`User ${user.id} has approved proposals`);
+    if (proposalsByUser.length > 0) {
+      console.info(`User ${user.id} has approved proposals`);
 
-  //     // create recipient object
-  //     // push to recipients array
-  //   }
-  // }
+      for (const proposal of proposalsByUser) {
+        const recipient = {
+          proposalId: proposal.id,
+          userId: user.id,
+          recipientAddress: user.safe_address,
+          requestedAmount: proposal.minimum_budget,
+        };
 
+        const onChainRecipient = await strategyContract.callStatic.getRecipient(
+          proposal.allo_recipient_id
+        );
+
+        console.log("onChainRecipient", onChainRecipient);
+
+        console.log(
+          "onChainRecipient.recipientStatus",
+          onChainRecipient.recipientStatus
+        );
+        if (onChainRecipient.recipientStatus === 0) {
+          recipientRegisterData.push(
+            ethers.utils.defaultAbiCoder.encode(
+              ["address", "address", "uint256", "tuple(uint256, string)"],
+              [
+                proposal.allo_recipient_id,
+                recipient.recipientAddress,
+                recipient.requestedAmount,
+                EMPTY_METADATA,
+              ]
+            )
+          );
+          poolIds.push(Number(process.env.ALLO_POOL_ID));
+          console.log("Recipients to be created: ", recipients.length);
+        }
+      }
+
+      console.log("Creating Recipients ...");
+    }
+  }
   // const recipients = await Promise.all(
   //   supabaseData.map(async (recipient: RawSupabaseData) => {
   //     try {
@@ -92,8 +130,41 @@ async function main() {
   //   })
   // );
 
-  // await createRecipients(recipients, alloContract, supabaseAdmin);
+  await createRecipients(recipients, alloContract, supabaseAdmin);
+
+  await registerOnchain(poolIds, recipientRegisterData, alloContract);
 }
+
+const registerOnchain = async (
+  poolIds: number[],
+  recipientRegisterData: any[],
+  alloContract: any
+) => {
+  try {
+    console.log(
+      "Registering Recipients onchain ...",
+      poolIds,
+      recipientRegisterData
+    );
+
+    const staticCallResult =
+      await alloContract!.callStatic.batchRegisterRecipient(
+        poolIds,
+        recipientRegisterData
+      );
+
+    const createTx = await alloContract.batchRegisterRecipient(
+      poolIds,
+      recipientRegisterData
+    );
+
+    await createTx.wait();
+
+    console.log("Recipients registered: ", staticCallResult);
+  } catch (error) {
+    console.error(error);
+  }
+};
 
 const createRecipients = async (
   recipients: Recipient[],
@@ -101,8 +172,6 @@ const createRecipients = async (
   supabaseClient: SupabaseClient
 ) => {
   for (const recipient of recipients) {
-    const userId = recipient.userId;
-
     console.info(`Creating Allo recipient for ${recipient.proposalId}...`);
 
     try {

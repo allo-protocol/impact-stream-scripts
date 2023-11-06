@@ -1,7 +1,7 @@
-import * as dotenv from "dotenv";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import * as dotenv from "dotenv";
 
-import { ethers, Contract } from "ethers";
+import { Contract, ethers } from "ethers";
 import registry from "../abi/Registry.json";
 
 dotenv.config();
@@ -35,7 +35,9 @@ async function main() {
     );
 
     users.push({
-      nonce: ethers.utils.keccak256(ethers.utils.toUtf8Bytes(proposal.id)),
+      nonce: ethers.utils.keccak256(
+        ethers.utils.toUtf8Bytes(proposal.id + new Date())
+      ),
       name: proposal.title,
       metadata: EMPTY_METADATA,
       proposalId: proposal.id,
@@ -46,7 +48,7 @@ async function main() {
   }
 
   console.log("Profiles to be created: ", users.length);
-  
+
   await createProfiles(users, supabaseAdmin);
 }
 
@@ -65,8 +67,8 @@ const createProfiles = async (users: any[], supabaseClient: SupabaseClient) => {
     registry.abi,
     signer
   );
-  
-  console.log("Creating Profiles ...");
+
+  console.log("Creating Profiles ...", users.length);
 
   for (const user of users) {
     try {
@@ -92,10 +94,14 @@ const createProfiles = async (users: any[], supabaseClient: SupabaseClient) => {
 
       console.log("Profile:", staticCallResult.toString());
 
+      const onchainProfileData = await registryContract.getProfileById(
+        staticCallResult.toString()
+      );
+
       try {
         const { error } = await supabaseClient
           .from("proposals")
-          .update({ allo_recipient_id: staticCallResult.toString() })
+          .update({ allo_recipient_id: onchainProfileData.anchor })
           .eq("id", user.proposalId);
 
         if (error) {
