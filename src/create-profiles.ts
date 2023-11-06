@@ -6,7 +6,9 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import fs from "fs";
 import fsPromises from "fs/promises";
 
-import { provider, registryContract, Contract } from "../common/ethers";
+import { provider, registryContract } from "../common/ethers";
+import { Contract } from "ethers";
+
 import { storage, createFileObject } from "../common/ipfs";
 
 import { Profile, RawSupabaseData } from "../types";

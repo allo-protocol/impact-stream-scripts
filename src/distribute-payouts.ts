@@ -4,7 +4,8 @@ import { finished } from "stream/promises";
 import fs from "fs";
 import fsPromises from "fs/promises";
 
-import { alloContract, Contract } from "../common/ethers";
+import { alloContract } from "../common/ethers";
+import { Contract } from "ethers";
 
 import { DistributionList } from "../types";
 
