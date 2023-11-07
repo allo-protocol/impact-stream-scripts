@@ -1,6 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import * as dotenv from "dotenv";
-import { Contract, ethers } from "ethers";
+import { ethers } from "ethers";
 import { alloContract, strategyContract } from "../common/ethers-helpers";
 import {
   getUnregisteredApprovedProposals,
@@ -14,6 +14,11 @@ dotenv.config();
 const EMPTY_METADATA = [0, ""];
 
 async function registerRecipient() {
+
+  // Reset DB for testing
+  // await supabaseAdmin.from("proposals").update({ registered: null }).eq("registered", true);
+  // return;
+
   const usersWithSafe = await getUsersWithSafe();
   const unregisteredApprovedProposals =
     await getUnregisteredApprovedProposals();
@@ -68,7 +73,6 @@ async function registerRecipient() {
             )
           );
           poolIds.push(Number(process.env.ALLO_POOL_ID));
-          console.log("Recipients to be created: ", recipients.length);
         }
 
         recipients.push(recipient);
@@ -91,11 +95,8 @@ const batchRegisterRecipients = async (
   alloContract: any
 ) => {
   try {
-    console.log(
-      "Registering Recipients onchain ...",
-      poolIds,
-      recipientRegisterData
-    );
+
+    console.log("Registering", recipientRegisterData.length, "onchain ... ");
 
     const staticCallResult =
       await alloContract!.callStatic.batchRegisterRecipient(
