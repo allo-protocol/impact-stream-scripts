@@ -31,6 +31,17 @@ export const getApprovedProposals = async () => {
   return approvedProposals;
 };
 
+export const getUnregisteredApprovedProposals = async () => {
+  // get all the recipients fromt the database with approved proposals which have not been registered
+  const unregisteredApprovedProposals = await supabaseAdmin
+    .from("proposals")
+    .select("*")
+    .eq("approved", true) // Filter for approved = true;
+    .is("registered", null);
+
+  return unregisteredApprovedProposals;
+};
+
 export const getUsersWithSafe = async () => {
   const usersWithSafe = await supabaseAdmin
     .from("users")

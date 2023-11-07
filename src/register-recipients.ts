@@ -3,7 +3,7 @@ import * as dotenv from "dotenv";
 import { Contract, ethers } from "ethers";
 import { alloContract, strategyContract } from "../common/ethers-helpers";
 import {
-  getApprovedProposals,
+  getUnregisteredApprovedProposals,
   getUsersWithSafe,
   supabaseAdmin,
 } from "../common/supabase";
@@ -11,20 +11,20 @@ import { Recipient } from "../types";
 
 dotenv.config();
 
-const EMPTY_METADATA = [0, "0x000123456789"];
+const EMPTY_METADATA = [0, ""];
 const EMPTY_RECIPIENT_ID = "0x0000000000000000000000000000000000000000";
 
 async function registerRecipient() {
   const usersWithSafe = await getUsersWithSafe();
-  const approvedProposals = await getApprovedProposals();
+  const unregisteredApprovedProposals = await getUnregisteredApprovedProposals();
 
   let recipients: any = [];
   let recipientRegisterData: any = [];
   let poolIds: any = [];
 
   for (const user of usersWithSafe.data!) {
-    // filter approvedProposals where user is the author
-    const proposalsByUser = approvedProposals.data!.filter(
+    // filter unregisteredApprovedProposals where user is the author
+    const proposalsByUser = unregisteredApprovedProposals.data!.filter(
       (proposal: any) => proposal.author_id === user.id
     );
 
