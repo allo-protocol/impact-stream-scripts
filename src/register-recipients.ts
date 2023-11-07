@@ -1,9 +1,9 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import * as dotenv from "dotenv";
-import { Contract, ethers } from "ethers";
+import { ethers } from "ethers";
 import { alloContract, strategyContract } from "../common/ethers-helpers";
 import {
-  getApprovedProposals,
+  getUnregisteredApprovedProposals,
   getUsersWithSafe,
   supabaseAdmin,
 } from "../common/supabase";
@@ -11,26 +11,34 @@ import { Recipient } from "../types";
 
 dotenv.config();
 
-const EMPTY_METADATA = [0, "0x000123456789"];
-const EMPTY_RECIPIENT_ID = "0x0000000000000000000000000000000000000000";
+const EMPTY_METADATA = [0, ""];
 
 async function registerRecipient() {
+
+  // Reset DB for testing
+  // await supabaseAdmin.from("proposals").update({ registered: null }).eq("registered", true);
+  // return;
+
   const usersWithSafe = await getUsersWithSafe();
-  const approvedProposals = await getApprovedProposals();
+  const unregisteredApprovedProposals =
+    await getUnregisteredApprovedProposals();
+
+  console.log(
+    "Unregistered Approved Proposals: ",
+    unregisteredApprovedProposals.data!.length
+  );
 
   let recipients: any = [];
   let recipientRegisterData: any = [];
   let poolIds: any = [];
 
   for (const user of usersWithSafe.data!) {
-    // filter approvedProposals where user is the author
-    const proposalsByUser = approvedProposals.data!.filter(
+    // filter unregisteredApprovedProposals where user is the author
+    const proposalsByUser = unregisteredApprovedProposals.data!.filter(
       (proposal: any) => proposal.author_id === user.id
     );
 
     if (proposalsByUser.length > 0) {
-      console.info(`User ${user.id} has approved proposals`);
-
       for (const proposal of proposalsByUser) {
         const recipient = {
           proposalId: proposal.id,
@@ -43,12 +51,15 @@ async function registerRecipient() {
           proposal.allo_recipient_id
         );
 
-        console.log("onChainRecipient", onChainRecipient);
+        if (onChainRecipient.recipientStatus != 0) {
+          console.log(
+            "Skipping as Proposal already registered: ",
+            proposal.id,
+            "with recipientId: ",
+            proposal.allo_recipient_id
+          );
+        }
 
-        console.log(
-          "onChainRecipient.recipientStatus",
-          onChainRecipient.recipientStatus
-        );
         if (onChainRecipient.recipientStatus === 0) {
           recipientRegisterData.push(
             ethers.utils.defaultAbiCoder.encode(
@@ -62,29 +73,30 @@ async function registerRecipient() {
             )
           );
           poolIds.push(Number(process.env.ALLO_POOL_ID));
-          console.log("Recipients to be created: ", recipients.length);
         }
-      }
 
-      console.log("Creating Recipients ...");
+        recipients.push(recipient);
+      }
     }
   }
 
-  await createRecipients(recipients, alloContract, supabaseAdmin);
-  await registerOnchain(poolIds, recipientRegisterData, alloContract);
+  if (recipients.length === 0) return;
+
+  if (recipientRegisterData.length > 0) {
+    // Bulk Register Recipients
+    await batchRegisterRecipients(poolIds, recipientRegisterData, alloContract);
+  }
+  await markRecipientsAsRegistered(recipients, supabaseAdmin);
 }
 
-const registerOnchain = async (
+const batchRegisterRecipients = async (
   poolIds: number[],
   recipientRegisterData: any[],
   alloContract: any
 ) => {
   try {
-    console.log(
-      "Registering Recipients onchain ...",
-      poolIds,
-      recipientRegisterData
-    );
+
+    console.log("Registering", recipientRegisterData.length, "onchain ... ");
 
     const staticCallResult =
       await alloContract!.callStatic.batchRegisterRecipient(
@@ -105,62 +117,23 @@ const registerOnchain = async (
   }
 };
 
-const createRecipients = async (
+const markRecipientsAsRegistered = async (
   recipients: Recipient[],
-  alloContract: Contract,
   supabaseClient: SupabaseClient
 ) => {
   for (const recipient of recipients) {
-    console.info(`Creating Allo recipient for ${recipient.proposalId}...`);
-
     try {
-      const recipientAddress = recipient.recipientAddress;
-      const requestedAmount = recipient.requestedAmount;
+      // update the registered and funded flag in the database
+      const { error: updateError } = await supabaseClient
+        .from("proposals")
+        .update({ registered: true, funded: false })
+        .eq("author_id", recipient.userId)
+        .neq("allo_recipient_id", null);
 
-      const recipientRegisterData = ethers.utils.defaultAbiCoder.encode(
-        ["address", "address", "uint256", "tuple(uint256, string)"],
-        [EMPTY_RECIPIENT_ID, recipientAddress, requestedAmount, EMPTY_METADATA]
-      );
-
-      const staticCallResult = await alloContract.registerRecipient(
-        process.env.ALLO_POOL_ID,
-        recipientRegisterData
-      );
-
-      const createTx = await alloContract.registerRecipient(
-        process.env.ALLO_POOL_ID,
-        recipientRegisterData
-      );
-
-      await createTx.wait();
-
-      // get recipientId after registering
-      const recipientId = staticCallResult.toString();
-
-      console.info(`Allo recipient created with id ${recipientId}`);
-
-      try {
-        // update the registered and funded flag in the database
-        // NOTE: I can't test this due to safe failure - @0xKurt @thelostone-mc - the db has been updated for this already.
-        const { error: updateError } = await supabaseClient
-          .from("proposals")
-          .update({ registered: true, funded: false })
-          .eq("author_id", recipient.userId);
-
-        if (updateError) throw updateError;
-
-        const { error } = await supabaseClient
-          .from("proposals")
-          .update({ allo_recipient_id: recipientId })
-          .eq("id", recipient.proposalId);
-
-        if (error) throw error;
-      } catch (error) {
-        console.error(`DB Update Failure. UserId: ${recipient.proposalId}`);
-        console.error(error);
-      }
+      if (updateError) throw updateError;
+      console.log("Marked proposal", recipient.proposalId, "as registered");
     } catch (error) {
-      console.info(`Register Failure: UserId: ${recipient.proposalId}`);
+      console.error(`DB Update Failure. UserId: ${recipient.proposalId}`);
       console.error(error);
     }
   }

@@ -76,7 +76,6 @@ const _calculatePayouts = async (strategyContract: Contract) => {
         console.log("total votes cast so far", totalVotesCastedByAllocators);
       }
 
-      console.log("Creating Recipients ...");
     }
   }
 

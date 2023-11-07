@@ -52,6 +52,8 @@ async function deploySafes() {
 
   console.log("safelessUsers count: ", safelessUsers.length);
 
+  if (safelessUsers.length === 0) return;
+
   await _deploySafes(safelessUsers, supabaseAdmin);
 }
 
@@ -88,7 +90,9 @@ const _deploySafes = async (users: User[], supabase: SupabaseClient) => {
 
       const sdk = await safeFactory.deploySafe({
         safeAccountConfig,
-        saltNonce: "1",
+        saltNonce: ethers.utils.keccak256(
+          ethers.utils.toUtf8Bytes(user.id + new Date())
+        ),
       });
 
       newSafeAddress = await sdk.getAddress();

@@ -1,7 +1,7 @@
 {
   "profileId": "0xdd24c7e8a35d4a95f0f4b8f5c819b7c2a0029807a39b0a2f8cb4bf51141816ff",
-  "strategyAddress": "0x1A9c7bED0Cf676cF989F7cc0fEBC361ebB55fFB2",
-  "allocationStartTime": "1699262707000",
+  "strategyAddress": "0x4751C362Fc1c6a6771B403Ea9624B00E0E20d68a",
+  "allocationStartTime": "1699337000",
   "allocationEndTime": "1701853567000",
   "maxVoiceCredits": "10",
   "poolToken": "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
@@ -19,3 +19,4 @@
   "useRegistry": false,
   "metadataRequires": false
 }
+
