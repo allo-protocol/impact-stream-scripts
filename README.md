@@ -13,7 +13,7 @@ git clone https://github.com/0xPrimordia/impact-stream-scripts.git
 2. Install dependencies:
 
 ```bash
-pnpm install
+yarn install
 ```
 
 3. Create a .env file at the root of the repository and add the following variables:
@@ -35,229 +35,47 @@ pnpm install
 pnpm build
 ```
 
-## Usage
+## Scripts
 
-### Create Pool
-
-Creates a new pool in the Allo Protocol. This script expects a CSV file with the following columns:
-
-- Allo profile id
-- Strategy address
-- Allocation start time
-- Allocation end time
-- Max voice credits per allocator
-- Pool token address
-- Initial pool amount
-- Pool metadata pointer
-- Pool manager addresses
-
-Once the CSV is created, run the following command:
-
-```bash
-pnpm create-pool <filepath>
+1. Deploy the QV Impact stream strategy. _(Verify the contract if it's not auto verified)_
+```shell
+pnm run deploy-strategy
 ```
-
-### Create Profiles
-
-Create profiles in the Allo Protocol registry contract based on user and proposal tables in Supabase. This script expects a CSV file with the following columns:
-
-- Supabase proposal id
-- Supabase proposal author id
-- Proposal collaborator json string
-
-This data can be exported from Supabase using the following sql command in their editor:
-
-```sql
-select
-  p.id as proposal_id,
-  json_build_object(
-    'id',
-    a.id,
-    'name',
-    a.name,
-    'family_name',
-    a.family_name,
-    'address',
-    a.address
-  ) as author,
-  case
-    when count(pc.user_id) > 0 then array_agg(
-      u.address
-    )
-    else null
-  end as collaborators
-from
-  proposals p
-  left join proposal_collaborators pc on p.id = pc.proposal_id
-  left join users u on u.id = pc.user_id
-  inner join users a on p.author_id = a.id
-group by
-  p.id,
-  a.id,
-  a.name,
-  a.family_name,
-  a.address;
+2. Update `ALLO_STRATEGY_ADDRESS` in `.env` with the deployed contract
+3. Update `pool.data.json` with the init data for pool creation. (_verify the timstamps and allo strategy address_)
+4. Create pool on Allo using deployed strategy
+```shell
+pnpm run create-pool
 ```
-
-You do not need to remove the header as the script will remove it. Once the CSV is created, run the following command:
-
-```bash
-pnpm create-profiles <filepath>
+5. Update `ALLO_POOL_ID` in `.env` with the pool Id
+6. Head over to `impact-stream-app` and update [allo.config.ts](https://github.com/0xPrimordia/impact-stream-app/blob/develop/src/app/%5Blocale%5D/config/allo.config.ts) with the right addresses and poolId
+7. Create Profiles from the Proposals in impact stream. (_Each proposal has a profile on the registry_)
+```shell
+pnpm run create-profiles
 ```
-
-The script will produce a CSV file, profiles.csv, with the following columns:
-
-- User Id
-- Whether the profile was successfully created
-- The resulting profile id if the profile was successfully created
-- Whether Supabase was successfully updated with the new profile id
-
-### Deploy Safes
-
-Deploy Safe Multisigs for each proposal in Supabase. This script expects a CSV file with the following columns:
-
-- Supabase User Id
-- User Wallet Address
-
-Once the CSV is created, run the following command:
-
-```bash
-pnpm deploy-safes <filepath>
+8. Next for every user with an approved proposal, we need deploy a safe which owned by the user wallet and impact stream multisig.  Update `IMPACT_STREAM_MULTISIG_ADDRESS` in `.env` with the wallet that will be the other signer
+9. Deploy Safe for the users
+```shell
+pnpm run deploy-safes
 ```
-
-The script will produce a CSV file, safes.csv, with the following columns:
-
-- User Id
-- Whether the safe was successfully deployed
-- The resulting safe address if the safe was successfully deployed
-- Whether Supabase was successfully updated with the new safe address
-
-### Register Allocators
-
-Registers each wallet address on Supabase as an allocator in Allo Protocol. This script expects a CSV file with the following columns:
-
-- User wallet address
-
-The data can be exported from Supabase using the following sql command in their editor:
-
-```sql
-select address from public.users;
+10. Now we register the recipients
+```shell
+pnpm run register-recipients
 ```
-
-Once the CSV is created, run the following command:
-
-```bash
-pnpm create-allocators <filepath>
+11. To set the allocators, update `allocators.data.json` with the wallets that can allocate
+12. Now we register the allocators
+```shell
+pnpm run register-allocators
 ```
-
-The script will produce a CSV file, allocators.csv, with the following columns:
-
-- User wallet address
-- Whether the allocator was successfully registered
-
-### Create Recipients
-
-Create a recipient in Allo Protocol for each proposal in Supabase. This script expects a CSV file with the following columns:
-
-- Proposal Author Id
-- Safe Multisig Address Associated with Proposal
-- Proposal Minimum Budget
-
-The data can be exported from Supabase using the following sql command in their editor:
-
-```sql
-select
-  p.id as proposal_id,
-  p.author_id as author_id,
-  p.allo_recipient_id as allo_recipient_id,
-  u.safe_address as safe_address,
-  p.minimum_budget as minimum_budget
-from
-  proposals p
-  left join users u on u.id = p.author_id
-group by
-  p.id,
-  p.author_id,
-  p.allo_recipient_id,
-  u.safe_address,
-  p.minimum_budget;
+13. Once the allocations have started, to get the payouts, run
+```shell
+pnpm run calculate-payouts
 ```
-
-You do not need to remove the header as the script will remove it. Once the CSV is created, run the following command:
-
-```bash
-pnpm create-recipients <filepath>
+14. Once the allocations has ended, to set the payouts on chain, run
+```shell
+pnpm run set-payouts
 ```
-
-The script will produce a CSV file, recipients.csv, with the following columns:
-
-- User id
-- Whether the recipient was successfully created
-- The resulting recipient id if the recipient was successfully created
-- Whether Supabase was successfully updated with the new recipient id
-
-### Calculate Payouts
-
-Calculate the payouts offchain for each recipient in Allo Protocol based on how many votes they recieved.
-
-To calculate the payouts, run the following command:
-
-```bash
-pnpm calculate-payouts
+15. To distribute payouts, run
+```shell
+pnpm run distribute-payouts
 ```
-
-The script will produce a CSV file, calculated_payouts.csv, with the following columns:
-
-- Recipient id
-- Payout amount
-
-### Set Payouts
-
-Set the payout for each recipient in Allo Protocol. This script expects a CSV file in the same format as the export of the `calculate-payouts` script:
-
-- Recipient id
-- Payout amount
-
-Once the CSV is created, run the following command:
-
-```bash
-pnpm set-payouts <filepath>
-```
-
-### Distribute Payouts
-
-Distribute the payout for each recipient in Allo Protocol. This script expects a CSV file with the following columns:
-
-- A comma-separated list of recipient addresses
-
-Once the CSV is created, run the following command:
-
-```bash
-pnpm distribute-payouts <filepath>
-```
-
-### Upload Files to IPFS
-
-Upload several files to IPFS at once. This script expects one argument, the path to where the files are located. Be aware that this script will pack files into a [Content Archive](https://web3.storage/docs/how-tos/work-with-car-files/) before uploading.
-
-To upload files, run the following command:
-
-```bash
-pnpm ipfs-upload <filepath>
-```
-
-## Contributing
-
-Pull requests are welcome. For major changes, please open an issue first
-to discuss what you would like to change.
-
-## License
-
-[MIT](https://choosealicense.com/licenses/mit/)
-
-````
-
-```
-
-```
-````
