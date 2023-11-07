@@ -1,96 +1,94 @@
 import * as dotenv from "dotenv";
-import { Contract } from "ethers";
-import { getEthBalance, strategyContract } from "../common/ethers-helpers";
-import { getApprovedProposals, getUsersWithSafe } from "../common/supabase";
+import { BigNumber, Contract } from "ethers";
+import { strategyContract } from "../common/ethers-helpers";
+import { getApprovedProposals } from "../common/supabase";
 import { Payout } from "../types";
 
 dotenv.config();
 
-async function calculatePayouts() {
-  await _calculatePayouts(strategyContract);
+export async function calculatePayouts(): Promise<Payout[]> {
+  return await _calculatePayouts(strategyContract);
 }
 
-const _calculatePayouts = async (strategyContract: Contract) => {
+const _calculatePayouts = async (
+  strategyContract: Contract,
+): Promise<Payout[]> => {
   // get total votes casted
   // get count the votes for each proposal
   // X = find out % of the votes for each proposal from total votes
   // X% of pool balance is the payout for the proposal
-
   // NOTE: should we check if the pool is active?
   // const isPoolActive = await strategyContract.isPoolActive();
-
   // if (!isPoolActive) {
   //   console.log("Not ready for payout");
   //   return;
   // }
-  const poolBalance = await getEthBalance(strategyContract.address);
-  console.log("poolBalance", poolBalance);
+  // get poolAmount instead of balance
+  const poolBalance = await strategyContract.getPoolAmount();
 
-  //
+  // get totalAllocations
+  // get allocations for each proposal
+  // allocations/totalAllocations = % of poolBalance
+
   let recipients: Payout[] = [];
-  let totalVotesCastedByAllocators = 0;
-
-  const usersWithSafe = await getUsersWithSafe();
+  let totalVotesCastedByAllocators = BigNumber.from(0);
   const approvedProposals = await getApprovedProposals();
 
-  for (const user of usersWithSafe.data!) {
-    // filter approvedProposals where user is the author
-    const proposalsByUser = approvedProposals.data!.filter(
-      (proposal: any) => proposal.author_id === user.id
-    );
+  type PayoutProposal = {
+    proposalId: string;
+    recipientId: string;
+    votes: BigNumber;
+    payoutAmount: BigNumber;
+  };
 
-    if (proposalsByUser.length > 0) {
-      console.info(`User ${user.id} has approved proposals`);
+  const payoutProposals: PayoutProposal[] = [];
 
-      for (const proposal of proposalsByUser) {
-        const onChainRecipient = await strategyContract.callStatic.getRecipient(
-          proposal.allo_recipient_id
-        );
+  for (const prop of approvedProposals.data!) {
+    const totalVotesReceived: BigNumber =
+      await strategyContract.getTotalVotesForRecipient(prop.allo_recipient_id);
+    totalVotesCastedByAllocators =
+      totalVotesCastedByAllocators.add(totalVotesReceived);
 
-        console.log("onChainRecipient", onChainRecipient);
-
-        console.log(
-          "onChainRecipient.recipientStatus",
-          onChainRecipient.recipientStatus
-        );
-
-        const totalVotesReceived: number =
-          await strategyContract.getTotalVotesForRecipient(
-            proposal.allo_recipient_id
-          );
-
-        console.log("totalVotesReceived", totalVotesReceived.toString());
-
-        if (onChainRecipient.recipientStatus === 2) {
-          recipients.push({
-            address: proposal.allo_recipient_id,
-            // todo: update this to use the actual amount calculated
-            amount: 0,
-          });
-
-          console.log("proposal", proposal);
-
-          totalVotesCastedByAllocators += totalVotesReceived;
-        }
-
-        console.log("total votes cast so far", totalVotesCastedByAllocators);
-      }
-
-    }
+    if (!totalVotesReceived.eq(0))
+      payoutProposals.push({
+        proposalId: prop.id,
+        recipientId: prop.allo_recipient_id,
+        votes: BigNumber.from(totalVotesReceived),
+        payoutAmount: BigNumber.from(0),
+      });
   }
 
-  const maxVoiceCreditsPerAllocator =
-    await strategyContract.maxVoiceCreditsPerAllocator();
+  for (const prop of payoutProposals) {
+    const payoutAmount = prop.votes
+      .mul(poolBalance)
+      .div(totalVotesCastedByAllocators);
+    prop.payoutAmount = payoutAmount;
+    recipients.push({
+      recipientId: prop.recipientId,
+      amount: payoutAmount,
+    });
+  }
+  console.log("=====================");
+  for (const prop of payoutProposals) {
+    console.log("ProposalId: ", prop.proposalId);
+    console.log("RecipientId: ", prop.recipientId);
+    console.log("Votes: ", prop.votes.toString());
+    console.log("PayoutAmount: ", prop.payoutAmount.toString());
+    console.log("=====================");
+  }
 
   console.log(
-    "maxVoiceCreditsPerAllocator",
-    maxVoiceCreditsPerAllocator.toString()
+    "TotalVotesCastedByAllocators: ",
+    totalVotesCastedByAllocators.toString(),
   );
+  console.log("PoolAmount: ", poolBalance.toString());
 
-  console.log("approvedProposals", approvedProposals.data!.length);
+  return recipients;
 };
 
-calculatePayouts().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  calculatePayouts().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+}

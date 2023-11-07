@@ -1,3 +1,5 @@
+import { BigNumber } from "ethers";
+
 export type User = {
   id: string;
   address: string;
@@ -49,8 +51,8 @@ export type PoolDeployment = {
 };
 
 export type Payout = {
-  address: string;
-  amount: number;
+  recipientId: string;
+  amount: BigNumber;
 };
 
 export type DistributionList = Payout[];

@@ -1,47 +1,39 @@
 import * as dotenv from "dotenv";
-import data from "../data/distribution.data.json";
-import { DistributionList } from "../types";
+import { Payout } from "../types";
+import { calculatePayouts } from "./calculate-payouts";
+import { alloContract } from "../common/ethers-helpers";
+import { supabaseAdmin } from "../common/supabase";
 
 dotenv.config();
 
 async function distributeFunds() {
-  const distributionData: DistributionList = data.calculatedPayouts;
+  const payouts: Payout[] = await calculatePayouts();
+  const recipients = payouts.map((payout) => payout.recipientId);
 
-  await _distributeFunds(distributionData);
+  await alloContract.distribute(process.env.ALLO_POOL_ID, recipients, "0x");
+
+  console.log("\nFunds distributed 🎉");
+
+  await markRecipientsAsPaid(payouts);
 }
 
-const _distributeFunds = async (distributionList: DistributionList) => {
-  const poolId = process.env.ALLO_POOL_ID as string;
-  for (const recipientId of distributionList) {
-    console.info(
-      `Running distribution for pool ${poolId} and recipient ${recipientId}...`
-    );
+const markRecipientsAsPaid = async (recipients: Payout[]) => {
+  for (const recipient of recipients) {
     try {
-      // const createTx = await alloContract.distribute(
-      //   poolId,
-      //   distributionList,
-      //   ""
-      // );
-      // const txReceipt = await createTx.wait();
+      // update the registered and funded flag in the database
+      const { error: updateError } = await supabaseAdmin
+        .from("proposals")
+        .update({ funded: true })
+        .eq("allo_recipient_id", recipient.recipientId);
 
-      // const logs = txReceipt?.logs.map((log: any) => {
-      //   return alloContract.interface.parseLog(log);
-      // });
-
-      // const distributionLog = logs.find((log: any) => {
-      //   return log.name === "Distributed";
-      // });
-
-      // const { recipientAddress, amount } = distributionLog;
-      console.info(
-        `Distribution completed for pool ${poolId} to ${recipientId}`
-      );
+      if (updateError) throw updateError;
+      console.log("Marked Recipient", recipient.recipientId, "as funded");
     } catch (error) {
+      console.error(`DB Update Failure. UserId: ${recipient.recipientId}`);
       console.error(error);
     }
   }
 };
-
 distributeFunds().catch((error) => {
   console.error(error);
   process.exitCode = 1;

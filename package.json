@@ -29,6 +29,7 @@
     "@safe-global/protocol-kit": "^1.3.0",
     "@safe-global/safe-core-sdk-types": "^2.3.0",
     "@supabase/supabase-js": "^2.38.2",
-    "ethers": "5.7.2"
+    "ethers": "5.7.2",
+    "web3-core": "^4.3.1"
   }
 }
