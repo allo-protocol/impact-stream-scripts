@@ -1,37 +1,11 @@
 import * as dotenv from "dotenv";
-import { parse } from "csv";
-import { finished } from "stream/promises";
-import fs from "fs";
-
-import { ContractTransaction, ethers, Contract } from "ethers";
-import allo from "../abi/Allo.json";
+import { ContractTransaction, ethers } from "ethers";
+import { alloContract } from "../common/ethers-helpers";
+import data from "../data/pool.data.json";
 
 dotenv.config();
 
-import data from "../data/pool.data.json";
-
-async function main() {
-  const provider = new ethers.providers.JsonRpcProvider(
-    process.env.INFURA_RPC_URL as string,
-  );
-
-  const signer = new ethers.Wallet(
-    process.env.SIGNER_PRIVATE_KEY as string,
-    provider,
-  );
-
-  const alloContract: Contract = new ethers.Contract(
-    process.env.ALLO_MAIN_ADDRESS as string,
-    allo.abi,
-    signer,
-  );
-
-  // const _currentTimestamp = (
-  //   await provider.getBlock(await provider.getBlockNumber())
-  // ).timestamp;
-  // const startTime = _currentTimestamp + 3600; // 1 hour later   appStartTime
-  // const endTime = _currentTimestamp + 864000; // 10 days later  roundEndTime
-
+async function createPool() {
   const startTime = data.allocationStartTime;
   const endTime = data.allocationEndTime;
 
@@ -43,7 +17,7 @@ async function main() {
       startTime,
       endTime,
       data.maxVoiceCredits,
-    ],
+    ]
   );
 
   try {
@@ -57,7 +31,7 @@ async function main() {
         data.poolToken,
         data.poolAmount,
         [data.metadata.protocol, data.metadata.pointer],
-        data.poolManagers,
+        data.poolManagers
       );
 
     const createTx: ContractTransaction =
@@ -68,7 +42,7 @@ async function main() {
         data.poolToken,
         data.poolAmount,
         [data.metadata.protocol, data.metadata.pointer],
-        data.poolManagers,
+        data.poolManagers
       );
     await createTx.wait();
 
@@ -78,4 +52,7 @@ async function main() {
   }
 }
 
-main();
+createPool().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

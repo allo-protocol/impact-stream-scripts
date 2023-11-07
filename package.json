@@ -5,16 +5,15 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "create-pool": "node ./dist/src/create-pool.js",
-    "create-profiles": "node ./dist/src/create-profiles.js",
-    "deploy-safes": "node ./dist/src/deploy-safes.js",
-    "deploy-strategy": "node ./dist/src/deploy-strategy.js",
-    "register-allocators": "node ./dist/src/register-allocators.js",
-    "create-recipients": "node ./dist/src/create-recipients.js",
-    "calculate-payouts": "node ./dist/src/calculate-payouts.js",
-    "set-payouts": "node ./dist/src/set-payouts.js",
-    "distribute-payouts": "node ./dist/src/distribute-payouts.js",
-    "ipfs-upload": "node ./dist/src/ipfs-upload.js"
+    "deploy-strategy": "pnpm build && node ./dist/src/deploy-strategy.js",
+    "create-pool": "pnpm build && node ./dist/src/create-pool.js",
+    "create-profiles": "pnpm build && node ./dist/src/create-profiles.js",
+    "deploy-safes": "pnpm build && node ./dist/src/deploy-safes.js",
+    "register-allocators": "pnpm build && node ./dist/src/register-allocators.js",
+    "register-recipients": "pnpm build && node ./dist/src/register-recipients.js",
+    "calculate-payouts": "pnpm build && node ./dist/src/calculate-payouts.js",
+    "set-payouts": "pnpm build && node ./dist/src/set-payouts.js",
+    "distribute-payouts": "pnpm build && node ./dist/src/distribute-payouts.js"
   },
   "keywords": [],
   "author": "",
@@ -26,13 +25,10 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
+    "@safe-global/api-kit": "^1.3.1",
     "@safe-global/protocol-kit": "^1.3.0",
     "@safe-global/safe-core-sdk-types": "^2.3.0",
     "@supabase/supabase-js": "^2.38.2",
-    "csv": "^6.3.5",
-    "ethers": "^5.7.2",
-    "minimalist": "^1.0.0",
-    "web3-core": "^4.3.1",
-    "web3.storage": "^4.5.5"
+    "ethers": "5.7.2"
   }
 }

@@ -1,58 +1,76 @@
 import * as dotenv from "dotenv";
-import { parse } from "csv";
-import { finished } from "stream/promises";
-import fs from "fs";
-import fsPromises from "fs/promises";
-
-import { strategyContract } from "../common/ethers";
+import { readFileSync, writeFileSync } from "fs";
 import { Payout } from "../types";
 
 dotenv.config();
 
-async function main() {
- if (process.argv.length < 3) {
-  console.error("Please provide the CSV file path as an argument");
-  process.exit(1); // Exit the script with an error code
- }
- const filePath = process.argv[2];
- const payoutData = await processFile(filePath);
+async function setPayouts() {
+  console.info(`Setting payouts...`);
 
- try {
-  console.log("=======================");
-  console.info(`Setting payouts for ${payoutData.length} recipients`);
-  await strategyContract.setPayouts(payoutData);
-  console.log("=======================");
-  console.info(`Payouts set for ${payoutData.length} recipients`);
- } catch (error) {
-  console.error(error);
- }
+  // get the addresses to set payouts for
+  const payouts: Payout[] = [];
+
+  // NOTE: test data - replace me!
+  payouts.push({
+    address: "0x0000789450270389",
+    amount: 100,
+  });
+  payouts.push({
+    address: "0x0000789450270389",
+    amount: 200,
+  });
+  payouts.push({
+    address: "0x0000789450270389",
+    amount: 300,
+  });
+
+  _setPayouts(payouts);
 }
 
-const processFile = async (filePath: string): Promise<Payout[]> => {
- let records: string[][] = [];
- const parser = fs.createReadStream(filePath).pipe(
-  parse({
-   delimiter: ",",
-   bom: true,
-  }),
- );
- parser.on("readable", function () {
-  let record;
-  while ((record = parser.read()) !== null) {
-   // Work with each record
-   records.push(record);
-  }
- });
- await finished(parser);
- const payouts: any[] = records
-  .slice(1) // Remove the header
-  .map((record) => {
-   return {
-    recipientId: record[0],
-    amount: record[1],
-   };
-  });
- return payouts;
-};
+async function _setPayouts(payouts: Payout[]) {
+  try {
+    // clear existing payout data
+    clearPayoutData("./data/distribution.data.json");
 
-main();
+    // set payout for each address in the `distribution.data.json` file
+    for (const payout of payouts) {
+      appendToCalculatedPayouts("./data/distribution.data.json", payout);
+    }
+
+    // set payout
+    // const setPayoutTx = await alloContract.setPayouts(payouts);
+    // const txReceipt = await setPayoutTx.wait();
+
+    // console.info(`Payouts set at transaction ${txReceipt.transactionHash}`);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+function clearPayoutData(filePath: string): void {
+  const fileContent = readFileSync(filePath, "utf8");
+  const jsonContent = JSON.parse(fileContent);
+
+  jsonContent.calculatedPayouts = [];
+  const newFileContent = JSON.stringify(jsonContent, null, 4);
+
+  writeFileSync(filePath, newFileContent, "utf8");
+}
+
+function appendToCalculatedPayouts(
+  filePath: string,
+  newPayout: { address: string; amount: number }
+): void {
+  const fileContent = readFileSync(filePath, "utf8");
+  const jsonContent = JSON.parse(fileContent);
+
+  jsonContent.calculatedPayouts.push(newPayout);
+  const newFileContent = JSON.stringify(jsonContent, null, 4);
+
+  writeFileSync(filePath, newFileContent, "utf8");
+}
+
+setPayouts().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
