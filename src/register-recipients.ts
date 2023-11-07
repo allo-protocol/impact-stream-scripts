@@ -43,12 +43,6 @@ async function registerRecipient() {
           proposal.allo_recipient_id
         );
 
-        console.log("onChainRecipient", onChainRecipient);
-
-        console.log(
-          "onChainRecipient.recipientStatus",
-          onChainRecipient.recipientStatus
-        );
         if (onChainRecipient.recipientStatus === 0) {
           recipientRegisterData.push(
             ethers.utils.defaultAbiCoder.encode(
@@ -141,7 +135,6 @@ const createRecipients = async (
 
       try {
         // update the registered and funded flag in the database
-        // NOTE: I can't test this due to safe failure - @0xKurt @thelostone-mc - the db has been updated for this already.
         const { error: updateError } = await supabaseClient
           .from("proposals")
           .update({ registered: true, funded: false })
