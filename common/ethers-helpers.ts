@@ -40,3 +40,24 @@ export const strategyContract = new ethers.Contract(
 );
 
 export const abiEncoder = ethers.utils.defaultAbiCoder;
+
+// Async function to get the balance
+export async function getTokenBalance(
+  tokenAddress: string,
+  walletAddress: string
+) {
+  const tokenAbi = ["function balanceOf(address owner) view returns (uint256)"];
+  const tokenContract = new ethers.Contract(tokenAddress, tokenAbi, provider);
+  const balance = await tokenContract.balanceOf(walletAddress);
+
+  console.log(`Balance of wallet ${walletAddress} is:`, balance.toString());
+
+  return balance;
+}
+
+export async function getEthBalance(address: string): Promise<string> {
+  const balanceBigInt = await provider.getBalance(address);
+  const balanceInEth = ethers.utils.formatEther(balanceBigInt);
+
+  return balanceInEth;
+}

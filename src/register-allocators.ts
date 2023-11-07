@@ -1,6 +1,6 @@
 import * as dotenv from "dotenv";
 import { ContractTransaction } from "ethers";
-import { strategyContract } from "../common/ethers";
+import { strategyContract } from "../common/ethers-helpers";
 import data from "../data/allocators.data.json";
 import { AddressList } from "../types";
 

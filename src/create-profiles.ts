@@ -1,19 +1,19 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import * as dotenv from "dotenv";
 import { ethers } from "ethers";
-import { registryContract } from "../common/ethers";
-import { supabaseAdmin } from "../common/supabase";
+import { registryContract } from "../common/ethers-helpers";
+import {
+  getApprovedProposalsWithoutRecipientId,
+  supabaseAdmin,
+} from "../common/supabase";
 
 dotenv.config();
 
 const EMPTY_METADATA = [0, ""];
 
 async function createProfiles() {
-  const approvedProposalsWithoutRecipientId = await supabaseAdmin
-    .from("proposals")
-    .select("*")
-    .eq("approved", true) // Filter for approved = true;
-    .is("allo_recipient_id", null);
+  const approvedProposalsWithoutRecipientId =
+    await getApprovedProposalsWithoutRecipientId();
 
   const allUsers = await supabaseAdmin.from("users").select("*");
 
@@ -42,7 +42,10 @@ async function createProfiles() {
   await _createProfiles(users, supabaseAdmin);
 }
 
-const _createProfiles = async (users: any[], supabaseClient: SupabaseClient) => {
+const _createProfiles = async (
+  users: any[],
+  supabaseClient: SupabaseClient
+) => {
   console.log("Creating Profiles ...", users.length);
 
   for (const user of users) {

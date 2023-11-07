@@ -1,8 +1,12 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import * as dotenv from "dotenv";
 import { Contract, ethers } from "ethers";
-import { alloContract, strategyContract } from "../common/ethers";
-import { supabaseAdmin } from "../common/supabase";
+import { alloContract, strategyContract } from "../common/ethers-helpers";
+import {
+  getApprovedProposals,
+  getUsersWithSafe,
+  supabaseAdmin,
+} from "../common/supabase";
 import { Recipient } from "../types";
 
 dotenv.config();
@@ -11,16 +15,8 @@ const EMPTY_METADATA = [0, "0x000123456789"];
 const EMPTY_RECIPIENT_ID = "0x0000000000000000000000000000000000000000";
 
 async function registerRecipient() {
-  const approvedProposals = await supabaseAdmin
-    .from("proposals")
-    .select("*")
-    .eq("approved", true) // Filter for approved = true;
-    .neq("allo_recipient_id", null);
-
-  const usersWithSafe = await supabaseAdmin
-    .from("users")
-    .select("*")
-    .neq("safe_address", null);
+  const usersWithSafe = await getUsersWithSafe();
+  const approvedProposals = await getApprovedProposals();
 
   let recipients: any = [];
   let recipientRegisterData: any = [];
@@ -144,13 +140,14 @@ const createRecipients = async (
       console.info(`Allo recipient created with id ${recipientId}`);
 
       try {
-        // TODO: check if this is needed
-        // const { error } = await supabaseClient
-        //   .from("users")
-        //   .update({ allo_recipient_id: recipientId })
-        //   .eq("author_id", userId);
+        // update the registered and funded flag in the database
+        // NOTE: I can't test this due to safe failure - @0xKurt @thelostone-mc - the db has been updated for this already.
+        const { error: updateError } = await supabaseClient
+          .from("proposals")
+          .update({ registered: true, funded: false })
+          .eq("author_id", recipient.userId);
 
-        // make sure proposal is linked to recipientId
+        if (updateError) throw updateError;
 
         const { error } = await supabaseClient
           .from("proposals")

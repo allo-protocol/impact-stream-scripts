@@ -9,3 +9,33 @@ export const supabaseAdmin = createClient(
     },
   }
 );
+
+export const getApprovedProposalsWithoutRecipientId = async () => {
+  const approvedProposalsWithoutRecipientId = await supabaseAdmin
+    .from("proposals")
+    .select("*")
+    .eq("approved", true) // Filter for approved = true;
+    .is("allo_recipient_id", null);
+
+  return approvedProposalsWithoutRecipientId;
+};
+
+export const getApprovedProposals = async () => {
+  // get all the recipients fromt the database with approved proposals
+  const approvedProposals = await supabaseAdmin
+    .from("proposals")
+    .select("*")
+    .eq("approved", true) // Filter for approved = true;
+    .neq("allo_recipient_id", null);
+
+  return approvedProposals;
+};
+
+export const getUsersWithSafe = async () => {
+  const usersWithSafe = await supabaseAdmin
+    .from("users")
+    .select("*")
+    .neq("safe_address", null);
+
+  return usersWithSafe;
+};
