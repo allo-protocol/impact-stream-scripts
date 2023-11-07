@@ -50,3 +50,8 @@ export const getUsersWithSafe = async () => {
 
   return usersWithSafe;
 };
+
+export const getAllUsers = async () => {
+  const allUsers = await supabaseAdmin.from("users").select("*");
+  return allUsers;
+}

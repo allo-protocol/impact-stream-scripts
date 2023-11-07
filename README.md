@@ -62,20 +62,19 @@ pnpm run deploy-safes
 ```shell
 pnpm run register-recipients
 ```
-11. To set the allocators, update `allocators.data.json` with the wallets that can allocate
-12. Now we register the allocators
+11. Now we register the allocators
 ```shell
 pnpm run register-allocators
 ```
-13. Once the allocations have started, to get the payouts, run
+12. Once the allocations have started, to get the payouts, run
 ```shell
 pnpm run calculate-payouts
 ```
-14. Once the allocations has ended, to set the payouts on chain, run
+13. Once the allocations has ended, to set the payouts on chain, run
 ```shell
 pnpm run set-payouts
 ```
-15. To distribute payouts, run
+14. To distribute payouts, run
 ```shell
 pnpm run distribute-payouts
 ```
