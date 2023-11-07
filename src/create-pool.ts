@@ -23,15 +23,18 @@ async function createPool() {
   try {
     console.info("Creating pool...");
 
+    // parse pool amount from ether to wei
+    const poolAmount = ethers.utils.parseEther(data.poolAmount.toString());
     const staticCallResult =
       await alloContract.callStatic.createPoolWithCustomStrategy(
         data.profileId,
         data.strategyAddress,
         encodedInitData,
         data.poolToken,
-        data.poolAmount,
+        poolAmount,
         [data.metadata.protocol, data.metadata.pointer],
-        data.poolManagers
+        data.poolManagers,
+        {value: poolAmount}
       );
 
     const createTx: ContractTransaction =
@@ -42,7 +45,8 @@ async function createPool() {
         data.poolToken,
         data.poolAmount,
         [data.metadata.protocol, data.metadata.pointer],
-        data.poolManagers
+        data.poolManagers,
+        {value: poolAmount}
       );
     await createTx.wait();
 
