@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 import { ContractTransaction, ethers } from "ethers";
+import data from "../common/data.json";
 import { alloContract } from "../common/ethers-helpers";
-import data from "../data/pool.data.json";
 
 dotenv.config();
 

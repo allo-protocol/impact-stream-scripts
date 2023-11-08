@@ -3,6 +3,7 @@ import * as dotenv from "dotenv";
 import { ethers } from "ethers";
 import { registryContract } from "../common/ethers-helpers";
 import {
+  getAllUsers,
   getApprovedProposalsWithoutRecipientId,
   supabaseAdmin,
 } from "../common/supabase";
@@ -14,8 +15,7 @@ const EMPTY_METADATA = [0, ""];
 async function createProfiles() {
   const approvedProposalsWithoutRecipientId =
     await getApprovedProposalsWithoutRecipientId();
-
-  const allUsers = await supabaseAdmin.from("users").select("*");
+  const allUsers = await getAllUsers();
 
   let users = [];
 
