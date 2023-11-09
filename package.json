@@ -13,7 +13,8 @@
     "register-recipients": "pnpm build && node ./dist/src/register-recipients.js",
     "calculate-payouts": "pnpm build && node ./dist/src/calculate-payouts.js",
     "set-payouts": "pnpm build && node ./dist/src/set-payouts.js",
-    "distribute-payouts": "pnpm build && node ./dist/src/distribute-payouts.js"
+    "distribute-payouts": "pnpm build && node ./dist/src/distribute-payouts.js",
+    "fund-allocators": "pnpm build && node ./dist/src/fund-allocators.js"
   },
   "keywords": [],
   "author": "",
