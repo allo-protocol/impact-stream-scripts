@@ -1,11 +1,11 @@
 {
   "profileId": "0x299ff0c10692f87f78ec08f0fc763ff6024d679c071b8de4343aeb7cd2b79a50",
-  "strategyAddress": "0x05b939069163891997C879288f0BaaC3faaf4500",
-  "allocationStartTime": "1699467999",
-  "allocationEndTime": "1699985399",
+  "strategyAddress": "0xe9b7c8C19aDb07828Cca6Ce19C44C659C65022C5",
+  "allocationStartTime": "1700280000",
+  "allocationEndTime": "1701043200",
   "maxVoiceCredits": "10",
   "poolToken": "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-  "poolAmount": "0.1",
+  "poolAmount": "0.01",
   "metadata": {
     "protocol": 1,
     "pointer": "bafkreigwiljyskihuaeyjsedoei3taprwbbheldxig25lhoqvw2kpcf4bu"
@@ -19,5 +19,5 @@
   ],
   "useRegistry": true,
   "metadataRequires": false,
-  "amountToSendAllocators": "0.0000001"
+  "amountToSendAllocators": "0.0001"
 }
