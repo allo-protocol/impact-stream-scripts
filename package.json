@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc",
     "deploy-strategy": "pnpm build && node ./dist/src/deploy-strategy.js",
+    "deploy-strategy-microgrants": "pnpm build && node ./dist/src/deploy-strategy-microgrants.js",
     "create-pool": "pnpm build && node ./dist/src/create-pool.js",
     "create-profiles": "pnpm build && node ./dist/src/create-profiles.js",
     "deploy-safes": "pnpm build && node ./dist/src/deploy-safes.js",
